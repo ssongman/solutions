@@ -12,9 +12,17 @@
 
 ```sh
 
+$ helm repo list
+
+## helm repo add
 $ helm repo add gitlab https://charts.gitlab.io/
 
+$ helm repo add gitlab https://charts.gitlab.io/ --insecure-skip-tls-verify
+
+
+## helm repo update
 $ helm repo update
+
 
 $ helm search repo gitlab
 NAME                            CHART VERSION   APP VERSION     DESCRIPTION
@@ -32,6 +40,11 @@ gitlab/knative                  0.10.0          0.9.0           A Helm chart for
 gitlab/plantuml                 0.1.17          1.0             PlantUML server
 
 
+
+
+# 안되면 직접 git clone 해야 한다.
+# $ git config --global http.sslVerify false
+# $ git clone https://gitlab.com/helmcharts2/gitlab
 
 
   
@@ -177,6 +190,12 @@ gitlab  gitlab          2               2024-01-10 00:54:07.695846165 +0900 KST 
 
 
 
+
+
+
+
+
+
 ## 3) 첫 로그인
 
 ### (1) URL
@@ -223,17 +242,711 @@ password : ******
 
 
 
+## 4) 초기 설정 작업
 
-
-# 2. 초기 설정 작업
-
-## 1) Sign-up restrictions
+### (1) Sign-up restrictions
 
 사용자들이 마음대로 등록하지 못하도록 설정해야 함
 
 * 메뉴 : Settings > Admin Area > General
 
 * 항목 : Sign-up enabled  false
+
+
+
+
+
+
+
+
+
+
+
+# 2.helm install2
+
+
+
+
+
+## 1) dry-run
+
+```sh
+$ helm -n gitlab-system ls 
+
+$ cd ~/song/helm/charts/gitlab
+
+$ helm -n gitlab-system install gitlab . \
+  --timeout 600s \
+  --set certmanager-issuer.email=ssongmantop@gmail.com \
+  --set global.edition=ce \
+  --set global.hosts.https=false \
+  --set global.hosts.gitlab.name=gitlab16.dev.icis.kt.co.kr \
+  --set global.hosts.gitlab.https=false            \
+  --set global.ingress.provider=traefik            \
+  --set global.ingress.class=traefik               \
+  --set global.ingress.tls.enabled=false           \
+  --set global.gitaly.enabled=true                 \
+  --set global.minio.enabled=false                 \
+  --set global.kas.enabled=false                   \
+  --set global.registry.enabled=false              \
+  --set global.appConfig.lfs.enabled=false         \
+  --set global.appConfig.artifacts.enabled=false   \
+  --set global.appConfig.uploads.enabled=false     \
+  --set global.appConfig.packages.enabled=false    \
+  --set global.image.registry=nexus.dspace.kt.co.kr    \
+  --set upgradeCheck.enabled=false                 \
+  --set certmanager.install=false                  \
+  --set certmanager.installCRDs=false              \
+  --set nginx-ingress.enabled=false                \
+  --set prometheus.install=false                   \
+  --set gitlab-runner.install=false                \
+  --set gitlab.toolbox.enabled=false               \
+  --set gitlab.gitlab-runner.enabled=false         \
+  --set gitlab.gitlab-exporter.enabled=false       \
+  --set gitlab.gitlab-shell.enabled=false          \
+  --set gitlab.sidekiq.enabled=false               \
+  --set gitlab.migrations.enabled=true             \
+  --set gitlab.gitaly.global.gitaly.enabled=false  \
+  --set registry.enabled=false \
+  --set gitlab.webservice.image.repository=nexus.dspace.kt.co.kr/icis/gitlab-webservice-ce \
+  --set gitlab.webservice.workhorse.image=nexus.dspace.kt.co.kr/icis/gitlab-workhorse-ce   \
+  --set gitlab.gitaly.image.repository=nexus.dspace.kt.co.kr/icis/gitaly                   \
+  --set gitlab.migrations.image.repository=nexus.dspace.kt.co.kr/icis/gitlab-toolbox-ce    \
+  --set global.certificates.image.repository=nexus.dspace.kt.co.kr/icis/certificates       \
+  --set global.kubectl.image.repository=nexus.dspace.kt.co.kr/icis/kubectl                 \
+  --set global.gitlabBase.image.repository=nexus.dspace.kt.co.kr/icis/gitlab-base          \
+  --set postgresql.image.registry=nexus.dspace.kt.co.kr            \
+  --set postgresql.image.repository=icis/postgresql                \
+  --set postgresql.image.tag=14.8.0                                \
+  --set postgresql.metrics.image.registry=nexus.dspace.kt.co.kr    \
+  --set postgresql.metrics.image.repository=icis/postgres-exporter \
+  --set postgresql.metrics.image.tag=0.12.0-debian-11-r86          \
+  --set redis.image.registry=nexus.dspace.kt.co.kr                 \
+  --set redis.image.repository=icis/redis                          \
+  --set redis.image.tag=6.2.7-debian-11-r11                        \
+  --set redis.metrics.image.registry=nexus.dspace.kt.co.kr         \
+  --set redis.metrics.image.repository=icis/redis-exporter         \
+  --set redis.metrics.image.tag=1.43.0-debian-11-r4                \
+  --set gitlab.gitaly.persistence.enabled=false \
+  --set gitlab.gitaly.persistence.size=50Gi     \
+  --set postgresql.persistence.enabled=false    \
+  --set postgresql.persistence.size=8Gi         \
+  --set postgresql.metrics.enabled=false                            \
+  --set postgresql.primary.containerSecurityContext.runAsUser=0     \
+  --set postgresql.primary.containerSecurityContext.privileged=true \
+  --set redis.master.containerSecurityContext.runAsUser=0           \
+  --set redis.master.containerSecurityContext.privileged=true       \
+  --dry-run=true > dry-run_07.yaml
+
+  
+---
+
+
+  
+```
+
+
+
+## 2) image pull
+
+### (1) image 목록
+
+```sh
+
+$ cat dry-run_02.yaml | grep image:
+    image: nexus.dspace.kt.co.kr:v16.7.0
+          image: registry.gitlab.com/gitlab-org/build/cng/kubectl:v16.7.0
+          image: registry.gitlab.com/gitlab-org/build/cng/certificates:v16.7.0
+          image: "registry.gitlab.com/gitlab-org/build/cng/gitlab-base:v16.7.0"
+          image: nexus.dspace.kt.co.kr:v16.7.0
+          image: nexus.dspace.kt.co.kr:v16.7.0
+          image: "registry.gitlab.com/gitlab-org/build/cng/gitlab-workhorse-ce:v16.7.0"
+          image: registry.gitlab.com/gitlab-org/build/cng/certificates:v16.7.0
+          image: "registry.gitlab.com/gitlab-org/build/cng/gitlab-base:v16.7.0"
+          image: "nexus.dspace.kt.co.kr:v16.7.0"
+          image: docker.io/bitnami/postgresql:14.8.0
+          image: docker.io/bitnami/postgres-exporter:0.12.0-debian-11-r86
+          image: docker.io/bitnami/redis:6.2.7-debian-11-r11
+          image: docker.io/bitnami/redis-exporter:1.43.0-debian-11-r4
+          image: registry.gitlab.com/gitlab-org/build/cng/kubectl:v16.7.0
+          image: registry.gitlab.com/gitlab-org/build/cng/certificates:v16.7.0
+          image: "registry.gitlab.com/gitlab-org/build/cng/gitlab-base:v16.7.0"
+          image: "registry.gitlab.com/gitlab-org/build/cng/gitlab-toolbox-ce:v16.7.0"
+
+$ cat dry-run_03.yaml | grep image:
+    image: nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-webservice-ce:v16.7.0
+          image: registry.gitlab.com/gitlab-org/build/cng/kubectl:v16.7.0
+          image: registry.gitlab.com/gitlab-org/build/cng/certificates:v16.7.0
+          image: "registry.gitlab.com/gitlab-org/build/cng/gitlab-base:v16.7.0"
+          image: nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-webservice-ce:v16.7.0
+          image: nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-webservice-ce:v16.7.0
+          image: "registry.gitlab.com/gitlab-org/build/cng/gitlab-workhorse-ce:v16.7.0"
+          image: registry.gitlab.com/gitlab-org/build/cng/certificates:v16.7.0
+          image: "registry.gitlab.com/gitlab-org/build/cng/gitlab-base:v16.7.0"
+          image: "nexus.dspace.kt.co.kr/icis/gitlab-org/gitaly:v16.7.0"
+          image: docker.io/bitnami/postgresql:14.8.0
+          image: docker.io/bitnami/postgres-exporter:0.12.0-debian-11-r86
+          image: docker.io/bitnami/redis:6.2.7-debian-11-r11
+          image: docker.io/bitnami/redis-exporter:1.43.0-debian-11-r4
+          image: registry.gitlab.com/gitlab-org/build/cng/kubectl:v16.7.0
+          image: registry.gitlab.com/gitlab-org/build/cng/certificates:v16.7.0
+          image: "registry.gitlab.com/gitlab-org/build/cng/gitlab-base:v16.7.0"
+          image: "registry.gitlab.com/gitlab-org/build/cng/gitlab-toolbox-ce:v16.7.0"
+
+$ cat dry-run_04.yaml | grep image:
+    image: nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-webservice-ce:v16.7.0
+          image: nexus.dspace.kt.co.kr/icis/gitlab-org/kubectl:v16.7.0
+          image: nexus.dspace.kt.co.kr/icis/gitlab-org/certificates:v16.7.0
+          image: "nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-base:v16.7.0"
+          image: nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-webservice-ce:v16.7.0
+          image: nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-webservice-ce:v16.7.0
+          image: "nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-workhorse-ce:v16.7.0"
+          image: nexus.dspace.kt.co.kr/icis/gitlab-org/certificates:v16.7.0
+          image: "nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-base:v16.7.0"
+          image: "nexus.dspace.kt.co.kr/icis/gitlab-org/gitaly:v16.7.0"
+          image: nexus.dspace.kt.co.kr/icis/bitnami/postgresql:14.8.0
+          image: nexus.dspace.kt.co.kr/icis/bitnami/postgres-exporter:0.12.0-debian-11-r86
+          image: nexus.dspace.kt.co.kr/icis/bitnami/redis:6.2.7-debian-11-r11
+          image: nexus.dspace.kt.co.kr/icis/bitnami/redis-exporter:1.43.0-debian-11-r4
+          image: nexus.dspace.kt.co.kr/icis/gitlab-org/kubectl:v16.7.0
+          image: nexus.dspace.kt.co.kr/icis/gitlab-org/certificates:v16.7.0
+          image: "nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-base:v16.7.0"
+          image: "nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-toolbox-ce:v16.7.0"
+
+$ cat dry-run_05.yaml | grep image:
+```
+
+
+
+
+
+### (2) tagging
+
+```sh
+
+
+docker pull registry.gitlab.com/gitlab-org/build/cng/gitlab-webservice-ce:v16.7.0
+docker pull registry.gitlab.com/gitlab-org/build/cng/kubectl:v16.7.0
+docker pull registry.gitlab.com/gitlab-org/build/cng/certificates:v16.7.0
+docker pull registry.gitlab.com/gitlab-org/build/cng/gitlab-base:v16.7.0
+docker pull registry.gitlab.com/gitlab-org/build/cng/gitlab-workhorse-ce:v16.7.0
+docker pull registry.gitlab.com/gitlab-org/build/cng/gitaly:v16.7.0
+docker pull registry.gitlab.com/gitlab-org/build/cng/gitlab-toolbox-ce:v16.7.0
+docker pull docker.io/bitnami/postgresql:14.8.0
+docker pull docker.io/bitnami/postgres-exporter:0.12.0-debian-11-r86
+docker pull docker.io/bitnami/redis:6.2.7-debian-11-r11
+docker pull docker.io/bitnami/redis-exporter:1.43.0-debian-11-r4
+
+
+docker tag registry.gitlab.com/gitlab-org/build/cng/gitlab-webservice-ce:v16.7.0  nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-webservice-ce:v16.7.0
+docker tag registry.gitlab.com/gitlab-org/build/cng/kubectl:v16.7.0               nexus.dspace.kt.co.kr/icis/gitlab-org/kubectl:v16.7.0
+docker tag registry.gitlab.com/gitlab-org/build/cng/certificates:v16.7.0          nexus.dspace.kt.co.kr/icis/gitlab-org/certificates:v16.7.0
+docker tag registry.gitlab.com/gitlab-org/build/cng/gitlab-base:v16.7.0           nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-base:v16.7.0
+docker tag registry.gitlab.com/gitlab-org/build/cng/gitlab-workhorse-ce:v16.7.0   nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-workhorse-ce:v16.7.0
+docker tag registry.gitlab.com/gitlab-org/build/cng/gitaly:v16.7.0                nexus.dspace.kt.co.kr/icis/gitlab-org/gitaly:v16.7.0
+docker tag registry.gitlab.com/gitlab-org/build/cng/gitlab-toolbox-ce:v16.7.0     nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-toolbox-ce:v16.7.0
+docker tag docker.io/bitnami/postgresql:14.8.0                                    nexus.dspace.kt.co.kr/icis/bitnami/postgresql:14.8.0
+docker tag docker.io/bitnami/postgres-exporter:0.12.0-debian-11-r86               nexus.dspace.kt.co.kr/icis/bitnami/postgres-exporter:0.12.0-debian-11-r86
+docker tag docker.io/bitnami/redis:6.2.7-debian-11-r11                            nexus.dspace.kt.co.kr/icis/bitnami/redis:6.2.7-debian-11-r11
+docker tag docker.io/bitnami/redis-exporter:1.43.0-debian-11-r4                   nexus.dspace.kt.co.kr/icis/bitnami/redis-exporter:1.43.0-debian-11-r4
+
+docker push nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-webservice-ce:v16.7.0
+docker push nexus.dspace.kt.co.kr/icis/gitlab-org/kubectl:v16.7.0
+docker push nexus.dspace.kt.co.kr/icis/gitlab-org/certificates:v16.7.0
+docker push nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-base:v16.7.0
+docker push nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-workhorse-ce:v16.7.0
+docker push nexus.dspace.kt.co.kr/icis/gitlab-org/gitaly:v16.7.0
+docker push nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-toolbox-ce:v16.7.0
+docker push nexus.dspace.kt.co.kr/icis/bitnami/postgresql:14.8.0
+docker push nexus.dspace.kt.co.kr/icis/bitnami/postgres-exporter:0.12.0-debian-11-r86
+docker push nexus.dspace.kt.co.kr/icis/bitnami/redis:6.2.7-debian-11-r11
+docker push nexus.dspace.kt.co.kr/icis/bitnami/redis-exporter:1.43.0-debian-11-r4
+
+
+
+```
+
+
+
+
+
+```
+
+docker tag nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-webservice-ce:v16.7.0         nexus.dspace.kt.co.kr/icis/gitlab-webservice-ce:v16.7.0
+docker tag nexus.dspace.kt.co.kr/icis/gitlab-org/kubectl:v16.7.0                      nexus.dspace.kt.co.kr/icis/kubectl:v16.7.0
+docker tag nexus.dspace.kt.co.kr/icis/gitlab-org/certificates:v16.7.0                 nexus.dspace.kt.co.kr/icis/certificates:v16.7.0
+docker tag nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-base:v16.7.0                  nexus.dspace.kt.co.kr/icis/gitlab-base:v16.7.0
+docker tag nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-workhorse-ce:v16.7.0          nexus.dspace.kt.co.kr/icis/gitlab-workhorse-ce:v16.7.0
+docker tag nexus.dspace.kt.co.kr/icis/gitlab-org/gitaly:v16.7.0                       nexus.dspace.kt.co.kr/icis/gitaly:v16.7.0
+docker tag nexus.dspace.kt.co.kr/icis/gitlab-org/gitlab-toolbox-ce:v16.7.0            nexus.dspace.kt.co.kr/icis/gitlab-toolbox-ce:v16.7.0
+docker tag nexus.dspace.kt.co.kr/icis/bitnami/postgresql:14.8.0                       nexus.dspace.kt.co.kr/icis/postgresql:14.8.0
+docker tag nexus.dspace.kt.co.kr/icis/bitnami/postgres-exporter:0.12.0-debian-11-r86  nexus.dspace.kt.co.kr/icis/postgres-exporter:0.12.0-debian-11-r86
+docker tag nexus.dspace.kt.co.kr/icis/bitnami/redis:6.2.7-debian-11-r11               nexus.dspace.kt.co.kr/icis/redis:6.2.7-debian-11-r11
+docker tag nexus.dspace.kt.co.kr/icis/bitnami/redis-exporter:1.43.0-debian-11-r4      nexus.dspace.kt.co.kr/icis/redis-exporter:1.43.0-debian-11-r4
+
+docker push nexus.dspace.kt.co.kr/icis/gitlab-webservice-ce:v16.7.0
+docker push nexus.dspace.kt.co.kr/icis/kubectl:v16.7.0
+docker push nexus.dspace.kt.co.kr/icis/certificates:v16.7.0
+docker push nexus.dspace.kt.co.kr/icis/gitlab-base:v16.7.0
+docker push nexus.dspace.kt.co.kr/icis/gitlab-workhorse-ce:v16.7.0
+docker push nexus.dspace.kt.co.kr/icis/gitaly:v16.7.0
+docker push nexus.dspace.kt.co.kr/icis/gitlab-toolbox-ce:v16.7.0
+docker push nexus.dspace.kt.co.kr/icis/postgresql:14.8.0
+docker push nexus.dspace.kt.co.kr/icis/postgres-exporter:0.12.0-debian-11-r86
+docker push nexus.dspace.kt.co.kr/icis/redis:6.2.7-debian-11-r11
+docker push nexus.dspace.kt.co.kr/icis/redis-exporter:1.43.0-debian-11-r4
+
+
+```
+
+
+
+
+
+## 3) install
+
+
+
+### (1) service account 권한
+
+```sh
+
+# 확인
+$ oc -n gitlab-system get sa gitlab-shared-secrets
+
+NAME                                 SECRETS   AGE
+builder                              2         458d
+default                              2         458d
+deployer                             2         458d
+gitlab-certmanager-startupapicheck   2         445d
+gitlab-dev-shared-secrets            2         440d
+gitlab-shared-secrets                2         6m39s
+jenkins-admin                        2         67d
+
+
+# 권한 부여
+$
+oc patch serviceaccount gitlab-certmanager-startupapicheck -p '{"imagePullSecrets": [{"name": "dspace-nexus"}]}' -n gitlab-system
+oc patch serviceaccount gitlab-dev-shared-secrets          -p '{"imagePullSecrets": [{"name": "dspace-nexus"}]}' -n gitlab-system
+oc patch serviceaccount gitlab-shared-secrets              -p '{"imagePullSecrets": [{"name": "dspace-nexus"}]}' -n gitlab-system
+
+
+
+# anyuid/privileged 권한 부여
+$ oc adm policy add-scc-to-user anyuid     -z default -n gitlab-system
+$ oc adm policy add-scc-to-user privileged -z default -n gitlab-system
+
+$ oc adm policy add-scc-to-user anyuid     -z gitlab-redis -n gitlab-system
+$ oc adm policy add-scc-to-user privileged -z gitlab-redis -n gitlab-system
+
+
+
+anyuid
+
+
+
+
+```
+
+
+
+
+
+### (2) pvc
+
+```pvc
+
+data-gitlab-postgresql-0          8Gi
+redis-data-gitlab-redis-master-0  8Gi
+repo-data-gitlab-gitaly-0        50Gi
+
+
+repo-data-gitlab-gitaly-0
+data-gitlab-postgresql-0
+
+```
+
+
+
+
+
+
+
+### (3) install
+
+```sh
+$ helm -n gitlab-system ls 
+
+$ cd ~/song/helm/charts/gitlab
+
+
+$ helm -n gitlab-system install gitlab . \
+  --timeout 600s \
+  --set certmanager-issuer.email=ssongmantop@gmail.com \
+  --set global.edition=ce \
+  --set global.hosts.https=false \
+  --set global.hosts.gitlab.name=gitlab16.dev.icis.kt.co.kr \
+  --set global.hosts.gitlab.https=false            \
+  --set global.ingress.provider=traefik            \
+  --set global.ingress.class=traefik               \
+  --set global.ingress.tls.enabled=false           \
+  --set global.gitaly.enabled=true                 \
+  --set global.minio.enabled=false                 \
+  --set global.kas.enabled=false                   \
+  --set global.registry.enabled=false              \
+  --set global.appConfig.lfs.enabled=false         \
+  --set global.appConfig.artifacts.enabled=false   \
+  --set global.appConfig.uploads.enabled=false     \
+  --set global.appConfig.packages.enabled=false    \
+  --set global.image.registry=nexus.dspace.kt.co.kr    \
+  --set upgradeCheck.enabled=false                 \
+  --set certmanager.install=false                  \
+  --set certmanager.installCRDs=false              \
+  --set nginx-ingress.enabled=false                \
+  --set prometheus.install=false                   \
+  --set gitlab-runner.install=false                \
+  --set gitlab.toolbox.enabled=false               \
+  --set gitlab.gitlab-runner.enabled=false         \
+  --set gitlab.gitlab-exporter.enabled=false       \
+  --set gitlab.gitlab-shell.enabled=false          \
+  --set gitlab.sidekiq.enabled=false               \
+  --set gitlab.migrations.enabled=true             \
+  --set gitlab.gitaly.global.gitaly.enabled=false  \
+  --set registry.enabled=false \
+  --set gitlab.webservice.image.repository=nexus.dspace.kt.co.kr/icis/gitlab-webservice-ce \
+  --set gitlab.webservice.workhorse.image=nexus.dspace.kt.co.kr/icis/gitlab-workhorse-ce   \
+  --set gitlab.gitaly.image.repository=nexus.dspace.kt.co.kr/icis/gitaly                   \
+  --set gitlab.migrations.image.repository=nexus.dspace.kt.co.kr/icis/gitlab-toolbox-ce    \
+  --set global.certificates.image.repository=nexus.dspace.kt.co.kr/icis/certificates       \
+  --set global.kubectl.image.repository=nexus.dspace.kt.co.kr/icis/kubectl                 \
+  --set global.gitlabBase.image.repository=nexus.dspace.kt.co.kr/icis/gitlab-base          \
+  --set postgresql.image.registry=nexus.dspace.kt.co.kr            \
+  --set postgresql.image.repository=icis/postgresql                \
+  --set postgresql.image.tag=14.8.0                                \
+  --set postgresql.metrics.image.registry=nexus.dspace.kt.co.kr    \
+  --set postgresql.metrics.image.repository=icis/postgres-exporter \
+  --set postgresql.metrics.image.tag=0.12.0-debian-11-r86          \
+  --set redis.image.registry=nexus.dspace.kt.co.kr                 \
+  --set redis.image.repository=icis/redis                          \
+  --set redis.image.tag=6.2.7-debian-11-r11                        \
+  --set redis.metrics.image.registry=nexus.dspace.kt.co.kr         \
+  --set redis.metrics.image.repository=icis/redis-exporter         \
+  --set redis.metrics.image.tag=1.43.0-debian-11-r4                \
+  --set gitlab.gitaly.persistence.enabled=false \
+  --set gitlab.gitaly.persistence.size=50Gi     \
+  --set postgresql.persistence.enabled=false    \
+  --set postgresql.persistence.size=8Gi         \
+  --set postgresql.metrics.enabled=false                            \
+  --set postgresql.primary.containerSecurityContext.runAsUser=0     \
+  --set postgresql.primary.containerSecurityContext.privileged=true \
+  --set redis.master.containerSecurityContext.runAsUser=0           \
+  --set redis.master.containerSecurityContext.privileged=true
+  
+
+
+
+NAME: gitlab
+LAST DEPLOYED: Mon Jan 15 15:46:29 2024
+NAMESPACE: gitlab-system
+STATUS: deployed
+REVISION: 1
+NOTES:
+=== CRITICAL
+The following charts are included for evaluation purposes only. They will not be supported by GitLab Support
+for production workloads. Use Cloud Native Hybrid deployments for production. For more information visit
+https://docs.gitlab.com/charts/installation/index.html#use-the-reference-architectures.
+- PostgreSQL
+- Redis
+- Gitaly
+
+=== NOTICE
+The minimum required version of PostgreSQL is now 13. See https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/doc/installation/upgrade.md for more details.
+Help us improve the installation experience, let us know how we did with a 1 minute survey:https://gitlab.fra1.qualtrics.com/jfe/form/SV_6kVqZANThUQ1bZb?installation=helm&release=16-7
+
+  
+  
+```
+
+
+
+### (4) 확인/삭제
+
+```sh
+
+
+# 삭제
+$ helm -n gitlab-system delete gitlab
+
+
+# 확인
+$ helm -n gitlab-system list
+
+```
+
+
+
+
+
+### (5) [참고] upgrade
+
+```sh
+
+
+$ helm -n gitlab-system upgrade gitlab . \
+  --timeout 600s \
+  --set certmanager-issuer.email=ssongmantop@gmail.com \
+  --set global.edition=ce \
+  --set global.hosts.https=false \
+  --set global.hosts.gitlab.name=gitlab16.dev.icis.kt.co.kr \
+  --set global.hosts.gitlab.https=false            \
+  --set global.ingress.provider=traefik            \
+  --set global.ingress.class=traefik               \
+  --set global.ingress.tls.enabled=false           \
+  --set global.gitaly.enabled=true                 \
+  --set global.minio.enabled=false                 \
+  --set global.kas.enabled=false                   \
+  --set global.registry.enabled=false              \
+  --set global.appConfig.lfs.enabled=false         \
+  --set global.appConfig.artifacts.enabled=false   \
+  --set global.appConfig.uploads.enabled=false     \
+  --set global.appConfig.packages.enabled=false    \
+  --set global.image.registry=nexus.dspace.kt.co.kr    \
+  --set upgradeCheck.enabled=false                 \
+  --set certmanager.install=false                  \
+  --set certmanager.installCRDs=false              \
+  --set nginx-ingress.enabled=false                \
+  --set prometheus.install=false                   \
+  --set gitlab-runner.install=false                \
+  --set gitlab.toolbox.enabled=false               \
+  --set gitlab.gitlab-runner.enabled=false         \
+  --set gitlab.gitlab-exporter.enabled=false       \
+  --set gitlab.gitlab-shell.enabled=false          \
+  --set gitlab.sidekiq.enabled=false               \
+  --set gitlab.migrations.enabled=true             \
+  --set gitlab.gitaly.global.gitaly.enabled=false  \
+  --set registry.enabled=false \
+  --set gitlab.webservice.image.repository=nexus.dspace.kt.co.kr/icis/gitlab-webservice-ce \
+  --set gitlab.webservice.workhorse.image=nexus.dspace.kt.co.kr/icis/gitlab-workhorse-ce   \
+  --set gitlab.gitaly.image.repository=nexus.dspace.kt.co.kr/icis/gitaly                   \
+  --set gitlab.migrations.image.repository=nexus.dspace.kt.co.kr/icis/gitlab-toolbox-ce    \
+  --set global.certificates.image.repository=nexus.dspace.kt.co.kr/icis/certificates       \
+  --set global.kubectl.image.repository=nexus.dspace.kt.co.kr/icis/kubectl                 \
+  --set global.gitlabBase.image.repository=nexus.dspace.kt.co.kr/icis/gitlab-base          \
+  --set postgresql.image.registry=nexus.dspace.kt.co.kr            \
+  --set postgresql.image.repository=icis/postgresql                \
+  --set postgresql.image.tag=14.8.0                                \
+  --set postgresql.metrics.image.registry=nexus.dspace.kt.co.kr    \
+  --set postgresql.metrics.image.repository=icis/postgres-exporter \
+  --set postgresql.metrics.image.tag=0.12.0-debian-11-r86          \
+  --set redis.image.registry=nexus.dspace.kt.co.kr                 \
+  --set redis.image.repository=icis/redis                          \
+  --set redis.image.tag=6.2.7-debian-11-r11                        \
+  --set redis.metrics.image.registry=nexus.dspace.kt.co.kr         \
+  --set redis.metrics.image.repository=icis/redis-exporter         \
+  --set redis.metrics.image.tag=1.43.0-debian-11-r4                \
+  --set gitlab.gitaly.persistence.enabled=false \
+  --set gitlab.gitaly.persistence.size=50Gi     \
+  --set postgresql.persistence.enabled=false    \
+  --set postgresql.persistence.size=8Gi
+  
+
+
+
+NAME: gitlab
+LAST DEPLOYED: Mon Jan 15 15:46:29 2024
+NAMESPACE: gitlab-system
+STATUS: deployed
+REVISION: 1
+NOTES:
+=== CRITICAL
+The following charts are included for evaluation purposes only. They will not be supported by GitLab Support
+for production workloads. Use Cloud Native Hybrid deployments for production. For more information visit
+https://docs.gitlab.com/charts/installation/index.html#use-the-reference-architectures.
+- PostgreSQL
+- Redis
+- Gitaly
+
+=== NOTICE
+The minimum required version of PostgreSQL is now 13. See https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/doc/installation/upgrade.md for more details.
+Help us improve the installation experience, let us know how we did with a 1 minute survey:https://gitlab.fra1.qualtrics.com/jfe/form/SV_6kVqZANThUQ1bZb?installation=helm&release=16-7
+
+  
+  
+```
+
+
+
+
+
+
+
+## 4) route
+
+
+
+```yaml
+
+
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: gitlabce-route
+  namespace: gitlab-system
+spec:
+  host: gitlabce.dev.icis.kt.co.kr
+  to:
+    kind: Service
+    name: gitlab-webservice-default
+    weight: 100
+  port:
+    targetPort: http-workhorse
+  wildcardPolicy: None
+---
+
+
+```
+
+
+
+## 5) web service 확인
+
+```
+
+
+http://gitlabce.dev.icis.kt.co.kr/users/sign_in
+
+
+
+```
+
+
+
+
+
+
+
+## 9) trouble shooting
+
+
+
+### (1) postgresql
+
+#### postgres permissiono denied
+
+```
+...
+postgresql 07:46:04.43
+postgresql 07:46:04.43 Welcome to the Bitnami postgresql container
+postgresql 07:46:04.44 Subscribe to project updates by watching https://github.com/bitnami/containers
+postgresql 07:46:04.44 Submit issues and feature requests at https://github.com/bitnami/containers/issues
+postgresql 07:46:04.44
+postgresql 07:46:04.44 INFO ==> ** Starting PostgreSQL setup **
+postgresql 07:46:04.45 INFO ==> Validating settings in POSTGRESQL_* env vars..
+postgresql 07:46:04.46 INFO ==> Loading custom pre-init scripts...
+postgresql 07:46:04.46 INFO ==> Loading user's custom files from /docker-entrypoint-preinitdb.d ...
+touch: cannot touch '/bitnami/postgresql/.gitlab_1_scripts_initialized': Permission denied
+
+```
+
+
+
+```
+runAsUser: 0 으로 수정
+```
+
+
+
+### 
+
+#### postgres permissiono denied
+
+```
+...
+postgresql 09:01:57.46
+postgresql 09:01:57.46 Welcome to the Bitnami postgresql container
+postgresql 09:01:57.46 Subscribe to project updates by watching https://github.com/bitnami/containers
+postgresql 09:01:57.46 Submit issues and feature requests at https://github.com/bitnami/containers/issues
+postgresql 09:01:57.46
+postgresql 09:01:57.46 INFO ==> ** Starting PostgreSQL setup **
+postgresql 09:01:57.48 INFO ==> Validating settings in POSTGRESQL_* env vars..
+chmod: changing permissions of '/proc/self/fd/1': Permission denied
+```
+
+
+
+```
+
+      securityContext:
+        runAsUser: 0
+        privileged: true    <-- 추가
+```
+
+
+
+
+
+### (2) redis Permission denied
+
+```
+
+1:C 15 Jan 2024 09:17:16.453 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+1:C 15 Jan 2024 09:17:16.453 # Redis version=6.2.7, bits=64, commit=00000000, modified=0, pid=1, just started
+1:C 15 Jan 2024 09:17:16.453 # Configuration loaded
+1:M 15 Jan 2024 09:17:16.454 * monotonic clock: POSIX clock_gettime
+1:M 15 Jan 2024 09:17:16.454 # Can't open the append-only file: Permission denied
+
+```
+
+
+
+```
+
+          securityContext:
+            runAsUser: 1001
+
+에서 아래로 변경
+            
+          securityContext:
+            runAsUser: 0
+            privileged: true 
+```
+
+
+
+### (3) webservice
+
+```
+...
+NOTICE: Database has not been initialized yet.
+Checking: main
+Database Schema - main (gitlabhq_production) - current: 0, codebase: 20231218062505
+NOTICE: Database has not been initialized yet.
+Checking: main
+Database Schema - main (gitlabhq_production) - current: 0, codebase: 20231218062505
+NOTICE: Database has not been initialized yet.
+Checking: main
+Database Schema - main (gitlabhq_production) - current: 0, codebase: 20231218062505
+NOTICE: Database has not been initialized yet.
+Checking: main
+Database Schema - main (gitlabhq_production) - current: 0, codebase: 20231218062505
+NOTICE: Database has not been initialized yet.
+Checking: main
+Database Schema - main (gitlabhq_production) - current: 0, codebase: 20231218062505
+NOTICE: Database has not been initialized yet.
+Checking: main
+Database Schema - main (gitlabhq_production) - current: 0, codebase: 20231218062505
+NOTICE: Database has not been initialized yet.
+Checking: main
+Database Schema - main (gitlabhq_production) - current: 0, codebase: 20231218062505
+NOTICE: Database has not been initialized yet.
+Checking: main
+Database Schema - main (gitlabhq_production) - current: 0, codebase: 20231218062505
+NOTICE: Database has not been initialized yet.
+WARNING: Not all services were operational, with data migrations completed.
+If this container continues to fail, please see: https://docs.gitlab.com/charts/troubleshooting/index.html#application-containers-constantly-initializing
+
+
+```
 
 
 
