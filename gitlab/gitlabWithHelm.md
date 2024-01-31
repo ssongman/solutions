@@ -2,9 +2,25 @@
 
 
 
+# 1. 개요
+
+helm chart 를 이용하여 gitlab 을 설치한다.
 
 
-# 1.helm install
+
+## 1) gitaly  사용
+
+gitaly 란? Git 레파지토리에 대한 RPC 기반의 빠른 읽기쓰기를 가능하게 하느느 오픈소스임
+
+Gitaly 노드를 포함시 Git 레파지토리는 클러스터의 모든 노드에 저장됨. 노드 하나가 중단되면 다른 노드로 인계되어서 사용됨.
+
+Git 레파지토리가 A-A 로 이중화된 솔루션으로 안정적으로 유지될 수 있다.
+
+
+
+
+
+# 2. public 환경
 
 
 
@@ -45,7 +61,6 @@ gitlab/plantuml                 0.1.17          1.0             PlantUML server
 # 안되면 직접 git clone 해야 한다.
 # $ git config --global http.sslVerify false
 # $ git clone https://gitlab.com/helmcharts2/gitlab
-
 
   
   
@@ -262,9 +277,9 @@ password : ******
 
 
 
-# 2.helm install2
+# 3. private 환경
 
-
+좀 복잡하다.
 
 
 
@@ -280,7 +295,7 @@ $ helm -n gitlab-system install gitlab . \
   --set certmanager-issuer.email=ssongmantop@gmail.com \
   --set global.edition=ce \
   --set global.hosts.https=false \
-  --set global.hosts.gitlab.name=gitlab16.dev.icis.kt.co.kr \
+  --set global.hosts.gitlab.name=gitlab.dev.icis.kt.co.kr \
   --set global.hosts.gitlab.https=false            \
   --set global.ingress.provider=traefik            \
   --set global.ingress.class=traefik               \
@@ -306,7 +321,6 @@ $ helm -n gitlab-system install gitlab . \
   --set gitlab.gitlab-shell.enabled=false          \
   --set gitlab.sidekiq.enabled=false               \
   --set gitlab.migrations.enabled=true             \
-  --set gitlab.gitaly.global.gitaly.enabled=false  \
   --set registry.enabled=false \
   --set gitlab.webservice.image.repository=nexus.dspace.kt.co.kr/icis/gitlab-webservice-ce \
   --set gitlab.webservice.workhorse.image=nexus.dspace.kt.co.kr/icis/gitlab-workhorse-ce   \
@@ -327,8 +341,10 @@ $ helm -n gitlab-system install gitlab . \
   --set redis.metrics.image.registry=nexus.dspace.kt.co.kr         \
   --set redis.metrics.image.repository=icis/redis-exporter         \
   --set redis.metrics.image.tag=1.43.0-debian-11-r4                \
-  --set gitlab.gitaly.persistence.enabled=false \
+  --set gitlab.gitaly.persistence.enabled=true  \
   --set gitlab.gitaly.persistence.size=50Gi     \
+  --set gitlab.gitaly.containerSecurityContext.runAsUser=0        \
+  --set gitlab.gitaly.containerSecurityContext.privileged=true    \
   --set postgresql.persistence.enabled=false    \
   --set postgresql.persistence.size=8Gi         \
   --set postgresql.metrics.enabled=false                            \
@@ -336,8 +352,8 @@ $ helm -n gitlab-system install gitlab . \
   --set postgresql.primary.containerSecurityContext.privileged=true \
   --set redis.master.containerSecurityContext.runAsUser=0           \
   --set redis.master.containerSecurityContext.privileged=true       \
-  --dry-run=true > dry-run_07.yaml
-
+  --dry-run=true > dry-run_08.yaml
+  
   
 ---
 
@@ -585,7 +601,7 @@ $ helm -n gitlab-system install gitlab . \
   --set certmanager-issuer.email=ssongmantop@gmail.com \
   --set global.edition=ce \
   --set global.hosts.https=false \
-  --set global.hosts.gitlab.name=gitlab16.dev.icis.kt.co.kr \
+  --set global.hosts.gitlab.name=gitlab.dev.icis.kt.co.kr \
   --set global.hosts.gitlab.https=false            \
   --set global.ingress.provider=traefik            \
   --set global.ingress.class=traefik               \
@@ -611,7 +627,6 @@ $ helm -n gitlab-system install gitlab . \
   --set gitlab.gitlab-shell.enabled=false          \
   --set gitlab.sidekiq.enabled=false               \
   --set gitlab.migrations.enabled=true             \
-  --set gitlab.gitaly.global.gitaly.enabled=false  \
   --set registry.enabled=false \
   --set gitlab.webservice.image.repository=nexus.dspace.kt.co.kr/icis/gitlab-webservice-ce \
   --set gitlab.webservice.workhorse.image=nexus.dspace.kt.co.kr/icis/gitlab-workhorse-ce   \
@@ -632,8 +647,10 @@ $ helm -n gitlab-system install gitlab . \
   --set redis.metrics.image.registry=nexus.dspace.kt.co.kr         \
   --set redis.metrics.image.repository=icis/redis-exporter         \
   --set redis.metrics.image.tag=1.43.0-debian-11-r4                \
-  --set gitlab.gitaly.persistence.enabled=false \
+  --set gitlab.gitaly.persistence.enabled=true  \
   --set gitlab.gitaly.persistence.size=50Gi     \
+  --set gitlab.gitaly.containerSecurityContext.runAsUser=0        \
+  --set gitlab.gitaly.containerSecurityContext.privileged=true    \
   --set postgresql.persistence.enabled=false    \
   --set postgresql.persistence.size=8Gi         \
   --set postgresql.metrics.enabled=false                            \
@@ -680,6 +697,12 @@ $ helm -n gitlab-system delete gitlab
 
 # 확인
 $ helm -n gitlab-system list
+NAME    NAMESPACE       REVISION        UPDATED                                 STATUS          CHART           APP VERSION
+gitlab  gitlab-system   1               2024-01-16 18:50:16.2069651 +0900 KST   deployed        gitlab-7.7.0    v16.7.0
+
+
+
+
 
 ```
 
@@ -697,7 +720,7 @@ $ helm -n gitlab-system upgrade gitlab . \
   --set certmanager-issuer.email=ssongmantop@gmail.com \
   --set global.edition=ce \
   --set global.hosts.https=false \
-  --set global.hosts.gitlab.name=gitlab16.dev.icis.kt.co.kr \
+  --set global.hosts.gitlab.name=gitlab.dev.icis.kt.co.kr \
   --set global.hosts.gitlab.https=false            \
   --set global.ingress.provider=traefik            \
   --set global.ingress.class=traefik               \
@@ -723,7 +746,6 @@ $ helm -n gitlab-system upgrade gitlab . \
   --set gitlab.gitlab-shell.enabled=false          \
   --set gitlab.sidekiq.enabled=false               \
   --set gitlab.migrations.enabled=true             \
-  --set gitlab.gitaly.global.gitaly.enabled=false  \
   --set registry.enabled=false \
   --set gitlab.webservice.image.repository=nexus.dspace.kt.co.kr/icis/gitlab-webservice-ce \
   --set gitlab.webservice.workhorse.image=nexus.dspace.kt.co.kr/icis/gitlab-workhorse-ce   \
@@ -744,10 +766,17 @@ $ helm -n gitlab-system upgrade gitlab . \
   --set redis.metrics.image.registry=nexus.dspace.kt.co.kr         \
   --set redis.metrics.image.repository=icis/redis-exporter         \
   --set redis.metrics.image.tag=1.43.0-debian-11-r4                \
-  --set gitlab.gitaly.persistence.enabled=false \
+  --set gitlab.gitaly.persistence.enabled=true  \
   --set gitlab.gitaly.persistence.size=50Gi     \
-  --set postgresql.persistence.enabled=false    \
-  --set postgresql.persistence.size=8Gi
+  --set gitlab.gitaly.containerSecurityContext.runAsUser=0        \
+  --set gitlab.gitaly.containerSecurityContext.privileged=true    \
+  --set postgresql.persistence.enabled=true     \
+  --set postgresql.persistence.size=8Gi         \
+  --set postgresql.metrics.enabled=false                            \
+  --set postgresql.primary.containerSecurityContext.runAsUser=0     \
+  --set postgresql.primary.containerSecurityContext.privileged=true \
+  --set redis.master.containerSecurityContext.runAsUser=0           \
+  --set redis.master.containerSecurityContext.privileged=true
   
 
 
@@ -770,8 +799,21 @@ https://docs.gitlab.com/charts/installation/index.html#use-the-reference-archite
 The minimum required version of PostgreSQL is now 13. See https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/doc/installation/upgrade.md for more details.
 Help us improve the installation experience, let us know how we did with a 1 minute survey:https://gitlab.fra1.qualtrics.com/jfe/form/SV_6kVqZANThUQ1bZb?installation=helm&release=16-7
 
-  
-  
+
+
+
+# 확인
+$ helm -n gitlab-system list
+
+NAME    NAMESPACE       REVISION        UPDATED                                 STATUS          CHART           APP VERSION
+gitlab  gitlab-system   1               2024-01-16 18:50:16.2069651 +0900 KST   deployed        gitlab-7.7.0    v16.7.0
+gitlab  gitlab-system   2               2024-01-16 19:02:44.261947 +0900 KST    deployed        gitlab-7.7.0    v16.7.0
+gitlab  gitlab-system   3               2024-01-16 19:07:28.8890048 +0900 KST   deployed        gitlab-7.7.0    v16.7.0
+gitlab  gitlab-system   4               2024-01-16 19:12:51.216409 +0900 KST    deployed        gitlab-7.7.0    v16.7.0
+gitlab  gitlab-system   5               2024-01-17 17:12:52.8043812 +0900 KST   deployed        gitlab-7.7.0    v16.7.0
+
+
+
 ```
 
 
@@ -785,7 +827,6 @@ Help us improve the installation experience, let us know how we did with a 1 min
 
 
 ```yaml
-
 
 kind: Route
 apiVersion: route.openshift.io/v1
@@ -803,7 +844,6 @@ spec:
   wildcardPolicy: None
 ---
 
-
 ```
 
 
@@ -812,10 +852,7 @@ spec:
 
 ```
 
-
 http://gitlabce.dev.icis.kt.co.kr/users/sign_in
-
-
 
 ```
 
@@ -945,10 +982,48 @@ NOTICE: Database has not been initialized yet.
 WARNING: Not all services were operational, with data migrations completed.
 If this container continues to fail, please see: https://docs.gitlab.com/charts/troubleshooting/index.html#application-containers-constantly-initializing
 
+```
+
+
+
+
+
+### (4) gitaly
+
+```
+Begin parsing .tpl templates from /etc/gitaly/templates
+Writing /etc/gitaly/config.toml
+Copying other config files found in /etc/gitaly/templates to /etc/gitaly
+Starting Gitaly
+{"component": "gitaly","subcomponent":"gitaly","latencies":[0.001,0.005,0.025,0.1,0.5,1,10,30,60,300,1500],"level":"info","msg":"grpc prometheus histograms enabled","pid":1,"time":"2024-01-16T09:53:41.645Z"}
+{"component": "gitaly","subcomponent":"gitaly","level":"info","msg":"Starting Gitaly","pid":1,"time":"2024-01-16T09:53:41.646Z","version":"16.7.0"}
+{"component": "gitaly","subcomponent":"gitaly","duration_ms":0,"level":"info","msg":"finished initializing cgroups","pid":1,"time":"2024-01-16T09:53:41.658Z"}
+{"component": "gitaly","subcomponent":"gitaly","duration_ms":23,"level":"info","msg":"finished unpacking auxiliary binaries","pid":1,"time":"2024-01-16T09:53:41.681Z"}
+{"component": "gitaly","subcomponent":"gitaly","duration_ms":0,"level":"info","msg":"finished initializing bootstrap","pid":1,"time":"2024-01-16T09:53:41.681Z"}
+{"component": "gitaly","subcomponent":"gitaly","duration_ms":0,"level":"info","msg":"finished initializing command factory","pid":1,"time":"2024-01-16T09:53:41.682Z"}
+{"component": "gitaly","subcomponent":"gitaly","duration_ms":1,"level":"info","msg":"finished detecting git version","pid":1,"time":"2024-01-16T09:53:41.684Z"}
+{"component": "gitaly","subcomponent":"gitaly","level":"info","msg":"clearing disk cache object folder","pid":1,"storage":"default","time":"2024-01-16T09:53:41.684Z"}
+
+이후 아무 메세지 없이 재기동....
 
 ```
 
 
+
+
+
+```
+
+          securityContext:
+            runAsUser: 1000
+
+에서 아래로 변경
+
+            privileged: true
+            runAsUser: 0
+            
+            
+```
 
 
 
