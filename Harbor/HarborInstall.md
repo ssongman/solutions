@@ -342,7 +342,17 @@ harbor_registry_password
 * 접속 url
   * http://harbor.ssongman.duckdns.org/
 * ID/Pass
-  * admin/Harbor12345
+  * admin/1JgUA7F9t5
+
+로그인 안됨....
+
+이상하다...
+
+별짓을 다해도 안되네...
+
+
+
+
 
 
 
