@@ -78,10 +78,6 @@ $ docker login http://nexus.ssongman.duckdns.org:5000/repository/docker-registry
 http://nexus.ssongman.duckdns.org:5000/repository/docker-registry/
 
 
-
-
-
-
 ```
 
 
@@ -91,6 +87,10 @@ http://nexus.ssongman.duckdns.org:5000/repository/docker-registry/
 ```sh
 Error response from daemon: Get "https://nexus.ssongman.duckdns.org:5000/v2/": dial tcp 59.15.23.41:5000: connect: connection refused
 
+
+# 위 에러는 5000 port 연결못해서 발생한 문제....
+
+# ingress - server - container 관계를 보면 이해 됨.
 
 ```
 
@@ -125,21 +125,21 @@ $ vi .docker/daemon.json
 ```bash
 $ sudo vi .docker/daemon.json
 {
-  "insecure-registries": [
-    "nexus.ssongman.duckdns.org:5000"
-  ]
+  "insecure-registries" : ["nexus.ssongman.duckdns.org:5000", "59.15.23.41:5000", "nexus-repo.ssongman.duckdns.org:80"]
 }
 
 
 
-$ cat > /etc/docker/daemon.json
-
-{
-    "insecure-registries" : ["nexus.ssongman.duckdns.org:5000"]
-}
-
-
-
+$ docker info
+...
+ Insecure Registries:
+  nexus-repo.ssongman.duckdns.org:80
+  nexus.ssongman.duckdns.org:5000
+  59.15.23.41:5000
+  127.0.0.0/8
+ Live Restore Enabled: false
+ 
+ 
 
 ```
 
@@ -175,9 +175,53 @@ sudo dockerd --insecure-registry [nexus.ssongman.duckdns.org:5000] -tls=false
 
 
 
+### 로그인 다시 시도
+
+```sh
+
+$ docker login nexus-repo.ssongman.duckdns.org:80
+
+Username: admin
+Password: 
+WARNING! Your password will be stored unencrypted in /home/song/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
+
+```
+
 
 
 로그인 성공!
+
+
+
+## docker pull/push
+
+
+
+```sh
+
+
+docker pull ssongman/userlist:v1
+
+docker tag ssongman/userlist:v1 nexus-repo.ssongman.duckdns.org:80/ssongman/userlist:v1 
+
+docker push nexus-repo.ssongman.duckdns.org:80/ssongman/userlist:v1 
+
+
+
+
+```
+
+
+
+
+
+
+
+
 
 
 
