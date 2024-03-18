@@ -34,7 +34,116 @@ $ kubectl create ns harbor
 
 
 
-## 2) Helm install
+## 2) 인증성 준비
+
+harbor 는 반드시 인증서가 필요하다.
+
+
+
+
+
+#### 디렉토리 이동
+
+```
+cd ~
+mkdir -p ~/certs
+cd ~/certs
+```
+
+#### CA Certificates 생성
+
+```
+# Root CA의 비밀키 생성
+openssl genrsa -out ca.key 4096
+
+# Root CA의 비밀키와 짝을 이룰 공개키 생성
+# * CN은 도메인이나 아이피 입력
+openssl req -x509 -new -nodes -sha512 -days 3650 \
+ -subj "/C=CN/ST=seoul/L=seoul/O=kyh0703/OU=tester/CN=100.100.103.167" \
+ -key ca.key \
+ -out ca.crt
+```
+
+
+
+#### Server Certificates 생성
+
+```
+# Server의 비밀키 생성
+openssl genrsa -out yourdomain.com.key 4096
+
+# Server의 CSR 파일 생성
+# * CN은 도메인이나 아이피 입력
+openssl req -sha512 -new \
+    -subj "/C=CN/ST=seoul/L=seoul/O=kyh0703/OU=tester/CN=100.100.103.167" \
+    -key 100.100.103.167.key \
+    -out 100.100.103.167.csr
+```
+
+
+
+#### 인증
+
+```
+cat > v3ext.cnf <<-EOF
+subjectAltName = IP:100.100.103.167,IP:127.0.0.1
+EOF
+```
+
+
+
+#### 인증키 생성
+
+```
+openssl x509 -req -sha512 -days 3650 \
+    -extfile v3.ext \
+    -CA ca.crt -CAkey ca.key -CAcreateserial \
+    -in 100.100.103.167.csr \
+    -out 100.100.103.167.crt
+```
+
+
+
+#### 인증서 복사
+
+```
+sudo mkdir -p /data/cert
+cp 100.100.103.167.crt /data/cert/
+cp 100.100.103.167.key /data/cert/
+```
+
+
+
+#### Cert 파일 생성
+
+```
+openssl x509 -inform PEM -in 100.100.103.167.crt -out 100.100.103.167.cert
+```
+
+
+
+#### Docker 인증서 복사
+
+```
+sudo mkdir -p /etc/docker/certs.d/100.100.103.167
+cp 100.100.103.167.cert /etc/docker/certs.d/100.100.103.167/
+cp 100.100.103.167.key /etc/docker/certs.d/100.100.103.167/
+cp ca.crt /etc/docker/certs.d/100.100.103.167/
+```
+
+#### 
+
+
+
+
+
+
+
+
+
+
+
+## 3) Helm install
 
 ```sh
 
@@ -56,11 +165,14 @@ $ cd ~/song/helm/charts/harbor
 
 
 $ helm -n harbor install harbor . \
+    --set adminPassword=adminpass \
+    --set internalTLS.enabled=true \
     --set exposureType=ingress \
     --set externalURL=https://harbor-core.ssongman.duckdns.org \
     --set service.type=ClusterIP \
     --set ingress.core.ingressClassName=traefik \
     --set ingress.core.hostname=harbor.ssongman.duckdns.org \
+    --set ingress.core.tls=true \
     --set persistence.enabled=false \
     --set nginx.replicaCount=1 \
     --set portal.replicaCount=1 \
@@ -80,7 +192,9 @@ $ helm -n harbor install harbor . \
 
 ############################################################
     --set adminPassword=adminpass \
-    --set harborAdminPassword=Harbor12345 \   # 실패
+    
+    --set ingress.core.tls=true \
+    
     
     --set exposureType=ingress \
     --set externalURL=https://harbor-core.ssongman.duckdns.org \
@@ -127,7 +241,7 @@ WARNING: There are "resources" sections in the chart not set. Using "resourcesPr
   echo Password: $(kubectl -n harbor get secret --namespace harbor harbor-core-envvars -o jsonpath="{.data.HARBOR_ADMIN_PASSWORD}" | base64 -d)
 
 Username: admin
-Password: 1JgUA7F9t5
+Password: PMAWucnkqW
 
 ############################################################
 
@@ -239,7 +353,7 @@ harbor  harbor          2               2024-03-17 23:37:33.678058148 +0900 KST 
 
 
 
-## 3) 확인
+## 4) 확인
 
 
 
@@ -335,7 +449,7 @@ harbor_registry_password
 
 
 
-## 4) 접속 url
+## 5) 접속 url
 
 
 
@@ -344,13 +458,58 @@ harbor_registry_password
 * ID/Pass
   * admin/1JgUA7F9t5
 
+
+
+## 9) trouble shooting
+
+
+
+### (1) CSRF (Cross-Site Request Forgery) 토큰 오류
+
+
+
 로그인 안됨....
 
 이상하다...
 
 별짓을 다해도 안되네...
 
+* harbor-core 로그
 
+```sh
+
+
+2024-03-18T01:58:20Z [DEBUG] [/server/middleware/log/log.go:31]: attach request id df0502cc-aefd-43a6-a3b3-76701bcb2180 to the logger for the request POST /c/login
+2024-03-18T01:58:20Z [DEBUG] [/lib/http/error.go:62]: {"errors":[{"code":"FORBIDDEN","message":"CSRF token invalid"}]}
+
+```
+
+
+
+* 안되는 사항 정리
+  * harbor를 helm chart로 설치후 첫 로그인을 시도하고 있는데 잘 안됨
+  * harbor-core pod 의 로그를 살펴보니 Forbidden 이라는 코드가 표기
+  * "CSRF token invalid"  라는 메세지가 보임
+
+
+
+원인 분석
+
+
+
+```
+참고
+https://blog.naver.com/anabaral/222024547186
+
+
+이 csrf 토큰이란 게 쿠키로 전달되는데, 
+크롬이 비보안 통신에서는 이 쿠키를 활성화하지 않으니 Request Header에도 그 쿠키가 다시 송신되지 않은 거였고, 
+그래서 서버가 거부한 것이었음..
+
+결국 https 로 설정 다시 하니 정상동작.
+
+
+```
 
 
 
