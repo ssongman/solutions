@@ -737,6 +737,8 @@ sudo dockerd --insecure-registry [nexus.ssongman.duckdns.org:5000] -tls=false
 
 
 
+### (1) push test
+
 ```sh
 
 $ docker pull ssongman/userlist:v1
@@ -914,6 +916,165 @@ harbor.ssongman.duckdns.org/app/userlist               v1.0.1            bf0cd99
 
 
 ```
+
+
+
+
+
+
+
+
+
+
+
+# 4. Harbor OCI helm registry
+
+
+
+### (1) helm package
+
+#### sample
+
+```sh
+
+$ helm version
+version.BuildInfo{Version:"v3.12.0", GitCommit:"c9f554d75773799f72ceef38c51210f1842a1dea", GitTreeState:"clean", GoVersion:"go1.20.3"}
+
+
+$ helm repo add --ca-file ca.crt --username=admin --password=Passw0rd myrepo https://xx.xx.xx.xx/chartrepo
+
+$ helm repo add --ca-file ca.crt --username=admin --password=Passw0rd myrepo https://xx.xx.xx.xx/chartrepo/myproject
+
+$ helm plugin install https://github.com/chartmuseum/helm-push
+
+$ helm install --ca-file=ca.crt --username=admin --password=Passw0rd --version 0.1.10 repo248/chart_repo/hello-helm
+
+```
+
+
+
+#### pull
+
+```sh
+
+$ cd ~/song/del
+
+$ helm pull nginx \
+  --version 15.14.0 \
+  --repo https://charts.bitnami.com/bitnami/
+
+
+$ cd ~/song/del
+$ ll
+-rw-r--r--  1 song song 45460 Mar 20 17:59 nginx-15.14.0.tgz
+
+```
+
+
+
+#### login / push
+
+```sh
+
+$ helm registry login -u admin https://harbor.ssongman.duckdns.org --ca-file ca.crt 
+
+
+# helm push [chart] [remote] [flags]
+
+# push
+$ ll
+-rw-r--r--  1 song song 45460 Mar 20 17:59 nginx-15.14.0.tgz
+
+
+$ helm push nginx-15.14.0.tgz oci://harbor.ssongman.duckdns.org/charts/ --ca-file ca.crt 
+
+
+```
+
+
+
+
+
+#### repo add
+
+```sh
+$ helm version
+version.BuildInfo{Version:"v3.12.0", GitCommit:"c9f554d75773799f72ceef38c51210f1842a1dea", GitTreeState:"clean", GoVersion:"go1.20.3"}
+
+
+# repo 등록1
+$ helm repo add \
+    --ca-file ca.crt \
+    --username=admin \
+    --password=adminpass \
+    ssongmanrepo \
+    oci://harbor.ssongman.duckdns.org/charts/
+
+# repo 등록2
+$ helm repo add \
+    --ca-file ca.crt \
+    ssongmanrepo \
+    https://harbor.ssongman.duckdns.org/charts
+
+```
+
+
+
+
+
+#### package
+
+```sh
+
+# Chart.yaml의 이름 및 버전을 사용하여 파일로 저장
+$ helm package .
+
+```
+
+
+
+
+
+### ca.crt
+
+harbor에서 다운로드 가능
+
+```sh
+
+$ cd ~/song/del/ca.crt
+
+-----BEGIN CERTIFICATE-----
+MIIDFDCCAfygAwIBAgIRAOumWyTpE2lUFu2iv4kFo+UwDQYJKoZIhvcNAQELBQAw
+FDESMBAGA1UEAxMJaGFyYm9yLWNhMB4XDTI0MDMxODA1MzE0N1oXDTI1MDMxODA1
+MzE0N1owFDESMBAGA1UEAxMJaGFyYm9yLWNhMIIBIjANBgkqhkiG9w0BAQEFAAOC
+AQ8AMIIBCgKCAQEAtMaFw1rECrdmNx2y70AoZVIWa+0pBHKfkhFjxZ0eZMN0YBib
+cKdh/XmLloPOW3bSNhfc+Mb8EQxcFYRiyhS5RgIZPdNWoVZivicJUE3YBMfUV35G
+yhtDAEkSSr2xVUsd8Nd1+bq4rf08tPnTU7DO2g44WekabVAD7jn709+XSGWd5ROz
+cdn3RGu0WZN7eGMgnCz7PM6P9CgD8xvrjlP4DtcK077LwiMx5Kpu2M+8KQwr2Bvi
+tvQuVvFZrjWuhTDKohBPZHMg+299IIxwoKP8tIKfp93ZjzL5dn3lBLlrRTm/qV+7
+Rwe14hNDXQf21FYhAzvKSapAVRvG8eF2FXdzGwIDAQABo2EwXzAOBgNVHQ8BAf8E
+BAMCAqQwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMA8GA1UdEwEB/wQF
+MAMBAf8wHQYDVR0OBBYEFEZjplQoEJUehGDsGRtCMS+z/P7DMA0GCSqGSIb3DQEB
+CwUAA4IBAQCzmwSfCHiounaAc4rdpj8iHGjuKiMzebta+CINX9GYQn4qgc7VHwD/
+ec1Vnc2dP7yYkcgkjt9s6pQwyPe/+vPkNWCVCc066iFATEieshY8XRPraerRD99D
+/lYEwY2mEazWfxCQN/OAb/6t/snqLNrY5R2dRRbhYIMBe3dUYs4O5U/uhQqQ11Hf
+ky8wr9W5O6MT7CTyMNW8q/7J/BXpZ7YrSGh+u731gMXDcBCvp7aPP+BZif1CK659
+Zgv/2IS942Eij11laVoWwDmE6QIT4d9py2MuyLfgLPLznz2/3K7mQo9Wa0Oqrvnm
+enWIlpIQ4mRSnbaxl3mrwqPA6/HjfJiS
+-----END CERTIFICATE-----
+
+
+```
+
+
+
+
+
+
+
+
+
+
 
 
 
