@@ -931,9 +931,9 @@ harbor.ssongman.duckdns.org/app/userlist               v1.0.1            bf0cd99
 
 
 
-### (1) helm package
+## 1) helm command sample
 
-#### sample
+### sample
 
 ```sh
 
@@ -953,7 +953,13 @@ $ helm install --ca-file=ca.crt --username=admin --password=Passw0rd --version 0
 
 
 
-#### pull
+
+
+## 2) helm pull/push
+
+
+
+### smaple(nginx) pull
 
 ```sh
 
@@ -972,7 +978,7 @@ $ ll
 
 
 
-#### login / push
+### login / push
 
 ```sh
 
@@ -995,7 +1001,7 @@ $ helm push nginx-15.14.0.tgz oci://harbor.ssongman.duckdns.org/charts/ --ca-fil
 
 
 
-#### repo add
+### repo add
 
 ```sh
 $ helm version
@@ -1022,7 +1028,7 @@ $ helm repo add \
 
 
 
-#### package
+### package
 
 ```sh
 
