@@ -387,21 +387,31 @@ $ helm -n harbor uninstall harbor
 
 
 
-
-
-### [참고] 인증서 준비
-
-harbor 는 반드시 https로 접근해야 한다.
-
-그렇지 않으면 login 시 csrf token invalid 오류 발생한다.
-
-그러므로 인증서가 필요하다.
+### (3) [참고] CA 인증서1
 
 
 
-관련링크 : https://kyh0703.github.io/install/post-install-harbor/
+#### 관련링크1
+
+- https://nangman14.tistory.com/78
 
 
+
+* 브라우저의 경고를 무시하고 HTTP 접속을 할 수는 있지만 Production 환경에서는 **HTTPS**를 통해 Harbor로 접근하는 것을 권장함
+
+* **self-signed certificate**로 Harbor에 HTTPS 설정 가능
+
+
+
+
+
+### (4) [참고] CA 인증서2
+
+
+
+#### 관련링크2
+
+* https://kyh0703.github.io/install/post-install-harbor/
 
 
 
@@ -648,13 +658,6 @@ bastion 에서 pull / push 해 보자.
 
 ```sh
 
-$ docker login harbor.ssongman.duckdns.org/app/userlist:v1
-Username: admin
-Password: 
-Error response from daemon: Get "https://harbor.ssongman.duckdns.org/v2/": tls: failed to verify certificate: x509: certificate signed by unknown authority
-
-
-
 $ docker login https://harbor.ssongman.duckdns.org
 Username: admin
 Password: 
@@ -677,6 +680,12 @@ Login Succeeded
 아래와 같이 insecure-registres 에 등록해 줘야 한다.
 
 ```sh
+
+$ docker login harbor.ssongman.duckdns.org/app/userlist:v1
+Username: admin
+Password: 
+Error response from daemon: Get "https://harbor.ssongman.duckdns.org/v2/": tls: failed to verify certificate: x509: certificate signed by unknown authority
+
 
 # error 내용
 
@@ -726,7 +735,6 @@ sudo dockerd
 sudo dockerd --insecure-registry [nexus.ssongman.duckdns.org:5000] 
 sudo dockerd --insecure-registry [nexus.ssongman.duckdns.org:5000] -tls=false
 
-
 ```
 
 
@@ -742,8 +750,12 @@ sudo dockerd --insecure-registry [nexus.ssongman.duckdns.org:5000] -tls=false
 ```sh
 
 $ docker pull ssongman/userlist:v1
+$ docker pull nginx
+
 $ docker tag ssongman/userlist:v1 harbor.ssongman.duckdns.org/app/userlist:v1
 $ docker tag ssongman/userlist:v1 harbor.ssongman.duckdns.org/app/userlist:v1.0.1
+
+$ docker tag nginx harbor.ssongman.duckdns.org/app/nginx
 
 
 
@@ -783,6 +795,13 @@ ce6c8756685b: Layer already exists
 0eb22bfb707d: Layer already exists 
 a2ae92ffcd29: Layer already exists 
 v1.0.1: digest: sha256:b0d5a3b6022623b71f09b866a8d612d71118ff9de54c966db91d900c03b31bcc size: 2424
+
+
+
+
+
+$ docker push harbor.ssongman.duckdns.org/app/nginx
+
 
 
 ```
@@ -903,9 +922,11 @@ $ docker rmi harbor.ssongman.duckdns.org/app/userlist:v1
 $ docker rmi harbor.ssongman.duckdns.org/app/userlist:v1.0.1
 
 
-# 삭제한 image pull
+# image pull
 $ docker pull harbor.ssongman.duckdns.org/app/userlist:v1.0.1
 $ docker pull harbor.ssongman.duckdns.org/app/userlist:v1
+$ docker pull harbor.ssongman.duckdns.org/app/nginx
+
 
 
 # 확인
@@ -913,7 +934,6 @@ $ docker images
 REPOSITORY                                             TAG               IMAGE ID       CREATED         SIZE
 harbor.ssongman.duckdns.org/app/userlist               v1                bf0cd99d0bad   5 years ago     680MB
 harbor.ssongman.duckdns.org/app/userlist               v1.0.1            bf0cd99d0bad   5 years ago     680MB
-
 
 ```
 
@@ -1090,7 +1110,7 @@ enWIlpIQ4mRSnbaxl3mrwqPA6/HjfJiS
 
 
 
-# 4. Proxy Cache 설정
+# 5. Proxy Cache 설정
 
 ## 1) 설정
 
@@ -1138,7 +1158,7 @@ Error response from daemon: unknown: resource not found: repo ssongman/userlist,
 
 
 
-# 5. Image 확인
+# 6. Image 확인
 
 ## 1) brower 에서 확인하는 방법
 
@@ -1255,6 +1275,682 @@ type: kubernetes.io/dockerconfigjson
 ```
 
 
+
+
+
+
+
+
+
+# 11. Module 검증
+
+maven module Upload/Download 가능여부를 확인한다.
+
+
+
+### [참고] 
+
+* git
+
+  * gitops
+    * https://gitlab.dspace.kt.co.kr/icis/sa/cmmn-lib/icis-sa-cmmn-lib-gitops-dev.git
+  * module sample
+    * https://gitlab.dspace.kt.co.kr/icis/sa/cmmn-lib/icis-cmmn-frwk-core
+
+* jenkins 
+
+  * https://jenkins.sit.icis.kt.co.kr/job/icis-sa-cmmn-lib-rel/job/icis-sa-cmmn-lib-frwk-core/configure
+
+    
+
+
+
+#### jenkins build pipeline sample
+
+```groovy
+
+
+def moduleBuildOnlyJar(version){
+	return """
+		
+		cd ${P_PRJ_NM}
+		
+		mvn clean install -Drevision="""+version+""" --settings ${G_MVN_SETTINGS_PATH}/settings_${P_DOMAIN}_admin.xml
+		ls target
+		mvn -X deploy:deploy-file -DgroupId=com.kt.icis -DartifactId=${P_PRJ_NM} -Dversion="""+version+""" -Dpackaging=jar -DgeneratePom=false -Dfile=target/${P_PRJ_NM}-"""+version+""".jar -Durl=http://nexus.dev.icis.kt.co.kr/repository/common-repository -DrepositoryId=common-lib --settings ${G_MVN_SETTINGS_PATH}/settings_${P_DOMAIN}_admin.xml
+	"""
+}
+
+```
+
+
+
+
+
+#### pom.xml sample
+
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>2.6.6</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+
+	<groupId>com.kt.icis</groupId>
+	<artifactId>icis-cmmn-frwk</artifactId>
+	<version>${revision}</version>
+	<name>icis-cmmn-frwk</name>
+	<description>ICISTR Core project</description>
+	<properties>
+		<revision>0.0.9-SNAPSHOT</revision>
+		<java.version>17</java.version>
+		<deploy.path>../deploy</deploy.path>
+		<spring-cloud.version>2021.0.0</spring-cloud.version>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-starter-logging</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>ch.qos.logback</groupId>
+					<artifactId>logback-classic</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>ch.qos.logback</groupId>
+					<artifactId>logback-core</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-aop</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.integration</groupId>
+			<artifactId>spring-integration-core</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-log4j2</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jdbc</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-openfeign</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-configuration-processor</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.12.0</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.11.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>31.1-jre</version>
+		</dependency>
+		<dependency>
+			<groupId>kt.hmac.sa</groupId>
+			<artifactId>security-cbc-hmac</artifactId>
+			<version>1.0.0</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/security-cbc-hmac.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>kt.com.util.TA256</groupId>
+			<artifactId>TA256</artifactId>
+			<version>1.0.0</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/TA256.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.xmlbeans</groupId>
+			<artifactId>xmlbeans</artifactId>
+			<version>5.0.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jdom</groupId>
+			<artifactId>jdom2</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.kt.nbss.esb.meta</groupId>
+			<artifactId>esbMeta</artifactId>
+			<version>RELEASE</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/KT_NBSS_ESB_META.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>com.kt.nbss.esb.meta</groupId>
+			<artifactId>ESBMetaSchemas</artifactId>
+			<version>RELEASE</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/ESBMetaSchemas.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>ktf.sso</groupId>
+			<artifactId>ssocommon</artifactId>
+			<version>RELEASE</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/ssocommon.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.jetbrains</groupId>
+			<artifactId>annotations</artifactId>
+			<version>RELEASE</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>jakarta.xml.bind</groupId>
+			<artifactId>jakarta.xml.bind-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk15on</artifactId>
+			<version>1.68</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.hamcrest</groupId>
+			<artifactId>hamcrest</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.vintage</groupId>
+			<artifactId>junit-vintage-engine</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-ui</artifactId>
+			<version>1.6.6</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-xml</artifactId>
+			<version>2.13.1</version>
+		</dependency>
+
+		<!-- For SafeDB SDK : S -->
+		<dependency>
+			<groupId>commons-beanutils</groupId>
+			<artifactId>commons-beanutils</artifactId>
+			<version>1.7.0</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-logging</groupId>
+			<artifactId>commons-logging</artifactId>
+			<version>1.1</version>
+		</dependency>
+		<dependency>
+			<groupId>net.sf.ezmorph</groupId>
+			<artifactId>ezmorph</artifactId>
+			<version>1.0.6</version>
+		</dependency>
+		<dependency>
+			<groupId>net.sf.json-lib</groupId>
+			<artifactId>json-lib</artifactId>
+			<version>2.4</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/json-lib-2.4.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.xerces</groupId>
+			<artifactId>xercesImpl</artifactId>
+			<version>2.9.1</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>xml-apis</groupId>
+			<artifactId>xml-apis</artifactId>
+			<version>1.4.01</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.initech</groupId>
+			<artifactId>INICrypto</artifactId>
+			<version>4.1.16</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/INICrypto_v4.1.16.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>com.initech</groupId>
+			<artifactId>INISAFECore</artifactId>
+			<version>2.2.12</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/INISAFECore_v2.2.12.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>com.initech.inisafent</groupId>
+			<artifactId>INISAFENet</artifactId>
+			<version>7.2.44</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/INISAFENet_v7.2.44_NS.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>com.initech</groupId>
+			<artifactId>INISAFEPKI</artifactId>
+			<version>1.1.29</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/INISAFEPKI_v1.1.29.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>com.initech.safedb.core</groupId>
+			<artifactId>SafeDBCore</artifactId>
+			<version>3.2.19</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/SafeDBCore_v3.2.19.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>com.initech.safedb.crypto</groupId>
+			<artifactId>SafeDBCrypto</artifactId>
+			<version>3.2.19</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/SafeDBCrypto_v3.2.19.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>com.initech.safedb</groupId>
+			<artifactId>SafeDBSDK</artifactId>
+			<version>3.2.19</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/lib/SafeDBSDK_v3.2.19.jar</systemPath>
+		</dependency>
+		<!-- // For SafeDB SDK : E -->
+
+	</dependencies>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-dependencies</artifactId>
+				<version>${spring-cloud.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>3.3.0</version>
+				<configuration>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+					<finalName>icis-cmmn-frwk-0.0.9-SNAPSHOT.jar</finalName>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+
+</project>
+
+```
+
+
+
+
+
+# 21. Harbor API
+
+
+
+```
+Base URL: harbor.ssongman.duckdns.org/api/v2.0
+```
+
+
+
+
+
+### projects list
+
+```bash
+$ curl -X 'GET' \
+  'https://harbor.ssongman.duckdns.org/api/v2.0/projects?page=1&page_size=10&with_detail=true' \
+  -H 'accept: application/json'
+
+[
+  {
+    "creation_time": "2024-03-18T05:32:51.436Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "0001-01-01T00:00:00.000Z",
+      "id": 2,
+      "items": [],
+      "project_id": 2,
+      "update_time": "0001-01-01T00:00:00.000Z"
+    },
+    "metadata": {
+      "public": "false"
+    },
+    "name": "app",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 2,
+    "repo_count": 2,
+    "update_time": "2024-03-18T05:32:51.436Z"
+  },
+  {
+    "creation_time": "2024-03-18T06:08:50.415Z",
+    "current_user_role_id": 1,
+    "current_user_role_ids": [
+      1
+    ],
+    "cve_allowlist": {
+      "creation_time": "0001-01-01T00:00:00.000Z",
+      "id": 3,
+      "items": [],
+      "project_id": 3,
+      "update_time": "0001-01-01T00:00:00.000Z"
+    },
+    "metadata": {
+      "public": "true",
+      "retention_id": "1"
+    },
+    "name": "app2",
+    "owner_id": 1,
+    "owner_name": "admin",
+    "project_id": 3,
+    "registry_id": 1,
+    "repo_count": 0,
+    "update_time": "2024-03-18T06:08:50.415Z"
+  },
+ ---
+```
+
+
+
+
+
+### Project infomation
+
+```sh
+
+
+$ curl -X 'GET' \
+  'https://harbor.ssongman.duckdns.org/api/v2.0/projects/app' \
+  -H 'accept: application/json' \
+  -H 'X-Is-Resource-Name: false'
+
+{
+  "creation_time": "2024-03-18T05:32:51.436Z",
+  "current_user_role_id": 1,
+  "current_user_role_ids": [
+    1
+  ],
+  "cve_allowlist": {
+    "creation_time": "0001-01-01T00:00:00.000Z",
+    "id": 2,
+    "items": [],
+    "project_id": 2,
+    "update_time": "0001-01-01T00:00:00.000Z"
+  },
+  "metadata": {
+    "public": "false"
+  },
+  "name": "app",
+  "owner_id": 1,
+  "owner_name": "admin",
+  "project_id": 2,
+  "repo_count": 2,
+  "update_time": "2024-03-18T05:32:51.436Z"
+}
+
+
+
+```
+
+
+
+### Repository 목록
+
+```sh
+
+$ curl -X 'GET' \
+  'https://harbor.ssongman.duckdns.org/api/v2.0/projects/app/repositories?page=1&page_size=10' \
+  -H 'accept: application/json'
+
+
+[
+  {
+    "artifact_count": 1,
+    "creation_time": "2024-03-22T06:04:51.135Z",
+    "id": 3,
+    "name": "app/nginx",
+    "project_id": 2,
+    "pull_count": 1,
+    "update_time": "2024-03-22T06:14:20.895Z"
+  },
+  {
+    "artifact_count": 1,
+    "creation_time": "2024-03-18T05:35:37.274Z",
+    "id": 1,
+    "name": "app/userlist",
+    "project_id": 2,
+    "pull_count": 2,
+    "update_time": "2024-03-18T05:44:15.328Z"
+  }
+]
+
+```
+
+
+
+
+
+
+
+
+
+### arifact info
+
+```sh
+
+$ curl -X 'GET' \
+  'https://harbor.ssongman.duckdns.org/api/v2.0/projects/app/repositories/userlist/artifacts?page=1&page_size=10&with_tag=true&with_label=false&with_scan_overview=false&with_signature=false&with_immutable_status=false&with_accessory=false' \
+  -H 'accept: application/json' \
+  -H 'X-Accept-Vulnerabilities: application/vnd.security.vulnerability.report; version=1.1, application/vnd.scanner.adapter.vuln.report.harbor+json; version=1.0'
+
+[
+  {
+    "accessories": null,
+    "addition_links": {
+      "build_history": {
+        "absolute": false,
+        "href": "/api/v2.0/projects/app/repositories/userlist/artifacts/sha256:b0d5a3b6022623b71f09b866a8d612d71118ff9de54c966db91d900c03b31bcc/additions/build_history"
+      },
+      "vulnerabilities": {
+        "absolute": false,
+        "href": "/api/v2.0/projects/app/repositories/userlist/artifacts/sha256:b0d5a3b6022623b71f09b866a8d612d71118ff9de54c966db91d900c03b31bcc/additions/vulnerabilities"
+      }
+    },
+    "digest": "sha256:b0d5a3b6022623b71f09b866a8d612d71118ff9de54c966db91d900c03b31bcc",
+    "extra_attrs": {
+      "architecture": "amd64",
+      "author": "ssongmantop@gmail.com",
+      "config": {
+        "ArgsEscaped": true,
+        "Cmd": [
+          "/bin/sh",
+          "-c",
+          "java -jar UserList.jar"
+        ],
+        "Env": [
+          "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+          "LANG=C.UTF-8",
+          "JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64",
+          "JAVA_VERSION=8u111",
+          "JAVA_DEBIAN_VERSION=8u111-b14-2~bpo8+1",
+          "CA_CERTIFICATES_JAVA_VERSION=20140324"
+        ],
+        "ExposedPorts": {
+          "8181/tcp": {}
+        },
+        "WorkingDir": "/usr/src/app"
+      },
+      "created": "2018-11-13T00:22:52.621679073Z",
+      "os": "linux"
+    },
+    "icon": "sha256:0048162a053eef4d4ce3fe7518615bef084403614f8bca43b40ae2e762e11e06",
+    "id": 1,
+    "labels": null,
+    "manifest_media_type": "application/vnd.docker.distribution.manifest.v2+json",
+    "media_type": "application/vnd.docker.container.image.v1+json",
+    "project_id": 2,
+    "pull_time": "2024-03-18T05:44:06.564Z",
+    "push_time": "2024-03-18T05:35:37.352Z",
+    "references": null,
+    "repository_id": 1,
+    "size": 280958537,
+    "tags": [
+      {
+        "artifact_id": 1,
+        "id": 1,
+        "immutable": false,
+        "name": "v1",
+        "pull_time": "0001-01-01T00:00:00.000Z",
+        "push_time": "2024-03-18T05:35:37.488Z",
+        "repository_id": 1
+      }
+    ],
+    "type": "IMAGE"
+  }
+]
+    
+  
+```
+
+
+
+
+
+### arifact reference
+
+```sh
+
+```
+
+
+
+
+
+### arifact tags
+
+```sh
+
+$ curl -X 'GET' \
+  'https://harbor.ssongman.duckdns.org/api/v2.0/projects/app/repositories/userlist/artifacts/v1/tags?page=1&page_size=10&with_signature=false&with_immutable_status=false' \
+  -H 'accept: application/json'
+  
+
+[
+  {
+    "artifact_id": 1,
+    "id": 5,
+    "immutable": false,
+    "name": "v1.0.1",
+    "pull_time": "0001-01-01T00:00:00.000Z",
+    "push_time": "2024-03-22T10:30:44.210Z",
+    "repository_id": 1
+  },
+  {
+    "artifact_id": 1,
+    "id": 1,
+    "immutable": false,
+    "name": "v1",
+    "pull_time": "0001-01-01T00:00:00.000Z",
+    "push_time": "2024-03-18T05:35:37.488Z",
+    "repository_id": 1
+  }
+]
+```
+
+
+
+
+
+
+
+
+
+### arifact tags delete
+
+
+
+```sh
+
+
+$ curl -X 'DELETE' \
+  'https://harbor.ssongman.duckdns.org/api/v2.0/projects/app/repositories/userlist/artifacts/v1.0.1/tags/v1.0.1' \
+  -H 'accept: application/json' \
+  -H 'X-Harbor-CSRF-Token: aNgxQDn6kcRhcDMCnzKRyiTBzsnhVKUL+hifurX3N5Vp6CHB03P5jE7N7XmQX+9svNwG96bF9/cTkIJaq2X1hw=='
+  
+
+OK
+ content-length: 0 
+ date: Fri,22 Mar 2024 10:38:16 GMT 
+ vary: Cookie 
+ x-harbor-csrf-token: ffkuGMZBdK8/48IImNqqRvkV6ykD7klHKle5YonQpfF8yT6ZLMgc5xBeHHOXt9TgYQgjF0R/G7vD36SCl0Jn4w== 
+ x-request-id: f3d3eacd-3428-4379-8f7c-b7545e7be513 
+ 
+
+```
 
 
 
