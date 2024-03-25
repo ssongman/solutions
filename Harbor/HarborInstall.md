@@ -1238,41 +1238,15 @@ $ curl --user "admin:adminpass" \
 
 
 
-
-
-# 7. kubernetes pull
-
-
-
-## 1) pull-image-private-registry 등록
-
-https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+# 7. Replication
 
 
 
-```sh
-$ kubectl create secret generic regcred \
-    --from-file=.dockerconfigjson=<path/to/.docker/config.json> \
-    --type=kubernetes.io/dockerconfigjson
-
-
-```
+https://nangman14.tistory.com/78
 
 
 
-secret 등록
 
-```sh
-apiVersion: v1
-kind: Secret
-metadata:
-  name: myregistrykey
-  namespace: awesomeapps
-data:
-  .dockerconfigjson: UmVhbGx5IHJlYWxseSByZWVlZWVlZWVlZWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWxsbGxsbGxsbGxsbGxsbGxsbGxsbGxsbGxsbGxsbGx5eXl5eXl5eXl5eXl5eXl5eXl5eSBsbGxsbGxsbGxsbGxsbG9vb29vb29vb29vb29vb29vb29vb29vb29vb25ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubmdnZ2dnZ2dnZ2dnZ2dnZ2dnZ2cgYXV0aCBrZXlzCg==
-type: kubernetes.io/dockerconfigjson
-
-```
 
 
 
@@ -1284,7 +1258,9 @@ type: kubernetes.io/dockerconfigjson
 
 # 11. Module 검증
 
-maven module Upload/Download 가능여부를 확인한다.
+maven module Upload/Download 가능여부를 확인한다. 
+
+harbor 는 container 위주의 repo 라서 안되는듯 하다.
 
 
 
@@ -1638,6 +1614,52 @@ def moduleBuildOnlyJar(version){
 </project>
 
 ```
+
+
+
+
+
+
+
+
+
+# 15. kubernetes pull
+
+
+
+## 1) pull-image-private-registry 등록
+
+https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+
+
+
+```sh
+$ kubectl create secret generic regcred \
+    --from-file=.dockerconfigjson=<path/to/.docker/config.json> \
+    --type=kubernetes.io/dockerconfigjson
+
+
+```
+
+
+
+secret 등록
+
+```sh
+apiVersion: v1
+kind: Secret
+metadata:
+  name: myregistrykey
+  namespace: awesomeapps
+data:
+  .dockerconfigjson: UmVhbGx5IHJlYWxseSByZWVlZWVlZWVlZWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWxsbGxsbGxsbGxsbGxsbGxsbGxsbGxsbGxsbGxsbGx5eXl5eXl5eXl5eXl5eXl5eXl5eSBsbGxsbGxsbGxsbGxsbG9vb29vb29vb29vb29vb29vb29vb29vb29vb25ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubmdnZ2dnZ2dnZ2dnZ2dnZ2dnZ2cgYXV0aCBrZXlzCg==
+type: kubernetes.io/dockerconfigjson
+
+```
+
+
+
+
 
 
 
