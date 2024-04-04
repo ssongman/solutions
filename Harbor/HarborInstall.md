@@ -658,6 +658,8 @@ bastion 에서 pull / push 해 보자.
 
 ```sh
 
+$ docker logout https://harbor.ssongman.duckdns.org
+
 $ docker login https://harbor.ssongman.duckdns.org
 Username: admin
 Password: 
@@ -677,11 +679,15 @@ Login Succeeded
 
 기본적으로 https로 접속하기 때문에 다음과 같은 에러 발생한다.
 
+
+
+#### insecure-registries 에 등록
+
 아래와 같이 insecure-registres 에 등록해 줘야 한다.
 
 ```sh
 
-$ docker login harbor.ssongman.duckdns.org/app/userlist:v1
+$ docker login harbor.ssongman.duckdns.org
 Username: admin
 Password: 
 Error response from daemon: Get "https://harbor.ssongman.duckdns.org/v2/": tls: failed to verify certificate: x509: certificate signed by unknown authority
@@ -736,6 +742,65 @@ sudo dockerd --insecure-registry [nexus.ssongman.duckdns.org:5000]
 sudo dockerd --insecure-registry [nexus.ssongman.duckdns.org:5000] -tls=false
 
 ```
+
+
+
+
+
+
+
+#### 인증서 등록
+
+```sh
+
+
+$ kubectl -n harbor get secret  harbor-ingress harbor-ingress -o yaml
+
+
+$ 
+  kubectl -n harbor get secret  harbor-ingress -o=jsonpath='{.data.ca\.crt}' | base64 -d
+
+-----BEGIN CERTIFICATE-----
+MIIDFDCCAfygAwIBAgIRAOumWyTpE2lUFu2iv4kFo+UwDQYJKoZIhvcNAQELBQAw
+FDESMBAGA1UEAxMJaGFyYm9yLWNhMB4XDTI0MDMxODA1MzE0N1oXDTI1MDMxODA1
+MzE0N1owFDESMBAGA1UEAxMJaGFyYm9yLWNhMIIBIjANBgkqhkiG9w0BAQEFAAOC
+AQ8AMIIBCgKCAQEAtMaFw1rECrdmNx2y70AoZVIWa+0pBHKfkhFjxZ0eZMN0YBib
+cKdh/XmLloPOW3bSNhfc+Mb8EQxcFYRiyhS5RgIZPdNWoVZivicJUE3YBMfUV35G
+yhtDAEkSSr2xVUsd8Nd1+bq4rf08tPnTU7DO2g44WekabVAD7jn709+XSGWd5ROz
+cdn3RGu0WZN7eGMgnCz7PM6P9CgD8xvrjlP4DtcK077LwiMx5Kpu2M+8KQwr2Bvi
+tvQuVvFZrjWuhTDKohBPZHMg+299IIxwoKP8tIKfp93ZjzL5dn3lBLlrRTm/qV+7
+Rwe14hNDXQf21FYhAzvKSapAVRvG8eF2FXdzGwIDAQABo2EwXzAOBgNVHQ8BAf8E
+BAMCAqQwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMA8GA1UdEwEB/wQF
+MAMBAf8wHQYDVR0OBBYEFEZjplQoEJUehGDsGRtCMS+z/P7DMA0GCSqGSIb3DQEB
+CwUAA4IBAQCzmwSfCHiounaAc4rdpj8iHGjuKiMzebta+CINX9GYQn4qgc7VHwD/
+ec1Vnc2dP7yYkcgkjt9s6pQwyPe/+vPkNWCVCc066iFATEieshY8XRPraerRD99D
+/lYEwY2mEazWfxCQN/OAb/6t/snqLNrY5R2dRRbhYIMBe3dUYs4O5U/uhQqQ11Hf
+ky8wr9W5O6MT7CTyMNW8q/7J/BXpZ7YrSGh+u731gMXDcBCvp7aPP+BZif1CK659
+Zgv/2IS942Eij11laVoWwDmE6QIT4d9py2MuyLfgLPLznz2/3K7mQo9Wa0Oqrvnm
+enWIlpIQ4mRSnbaxl3mrwqPA6/HjfJiS
+-----END CERTIFICATE-----
+
+
+
+$  cd /usr/local/share/ca-certificates
+
+$ ll
+-rw-r--r-- 1 root root 1127 Mar 21 10:28 harbor-ca.crt
+
+$ cat harbor-ca.crt
+-----BEGIN CERTIFICATE-----
+...
+enWIlpIQ4mRSnbaxl3mrwqPA6/HjfJiS
+-----END CERTIFICATE-----
+
+
+
+
+```
+
+
+
+
 
 
 
