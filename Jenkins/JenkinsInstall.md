@@ -19,9 +19,9 @@ $ kubectl create ns jenkins-system
 
 
 
-## 2) helm chart
+## 2) helm chart - bitnami 
 
-
+### helm chart download
 
 ```sh
 $ helm search repo jenkins
@@ -59,8 +59,10 @@ $ helm -n jenkins-system install jenkins . \
     --set ingress.hostname=jenkins.ssongman.duckdns.org \
     --set ingress.ingressClassName=traefik \
     --set persistence.enabled=true \
+    --set agent.enabled=true \
     --dry-run=true
-
+    
+    
 =============================================
 
     --set agent.image 
@@ -116,6 +118,68 @@ $ helm -n jenkins-system delete jenkins
 
 
 
+
+
+### Upgrade
+
+```sh
+$ cd ~/song/helm/charts/jenkins
+
+$ helm -n jenkins-system upgrade jenkins . \
+    --set jenkinsUser=jenkins \
+    --set jenkinsPassword=jenkinspass \
+    --set service.type=ClusterIP \
+    --set ingress.enabled=true \
+    --set ingress.hostname=jenkins.ssongman.duckdns.org \
+    --set ingress.ingressClassName=traefik \
+    --set persistence.enabled=true \
+    --set agent.enabled=true \
+    --dry-run=true > dry-run-4.yaml
+    
+    
+    --set containerSecurityContext.privileged=true \
+    --set containerSecurityContext.allowPrivilegeEscalation=true \
+    
+
+
+
+
+
+
+
+
+
+# 확인
+$ helm -n jenkins-system list
+
+NAME    NAMESPACE       REVISION        UPDATED                                 STATUS          CHART           APP VERSION
+jenkins jenkins-system  1               2024-04-17 18:24:06.690788376 +0900 KST deployed        jenkins-12.11.0 2.440.1 
+jenkins jenkins-system  4               2024-04-18 13:42:25.273448235 +0900 KST deployed        jenkins-12.11.0 2.440.1
+
+
+
+
+# 삭제시...
+$ helm -n jenkins-system delete jenkins
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ### 확인
 
 
@@ -134,7 +198,214 @@ jenkins / jankins****
 
 
 
+## 3) helm install - jenkins 공식chart
 
+
+
+### helm chart download
+
+```sh
+$ helm repo add jenkinsci https://charts.jenkins.io
+$ helm repo update
+
+$ helm search repo jenkinsci
+
+NAME                    CHART VERSION   APP VERSION     DESCRIPTION                                       
+jenkinsci/jenkins       5.1.6           2.440.3         Jenkins - Build great things at any scale! As t...
+
+$ helm pull jenkinsci/jenkins
+
+$ ll
+
+-rw-r--r--  1 song song  74786 Apr 18 15:12 jenkins-5.1.6.tgz
+
+
+
+
+```
+
+
+
+### pv/pvc 
+
+
+
+### sa
+
+
+
+### helm install
+
+```sh
+
+
+$ cd ~/song/helm/charts/jenkins
+
+$ helm -n jenkins-system install jenkins . \
+    --set controller.admin.username=admin \
+    --set controller.admin.password=adminpass \
+    --set controller.jenkinsUrl=jenkins.ssongman.duckdns.org \
+    --set controller.ingress.enabled=true \
+    --set controller.ingress.ingressClassName=traefik \
+    --set controller.ingress.hostName=jenkins.ssongman.duckdns.org \
+    --set agent.enabled=true \
+    --set persistence.enabled=false \
+    --dry-run=true > dry-run-1.yaml
+
+
+# 확인
+$ helm -n jenkins-system
+
+
+
+
+# upgrade
+$ helm -n jenkins-system upgrade jenkins . \
+    --set controller.admin.username=admin \
+    --set controller.admin.password=adminpass \
+    --set controller.jenkinsUrl=jenkins.ssongman.duckdns.org \
+    --set controller.ingress.enabled=true \
+    --set controller.ingress.ingressClassName=traefik \
+    --set controller.ingress.hostName=jenkins.ssongman.duckdns.org \
+    --set agent.enabled=true \
+    --set persistence.enabled=false \
+    --dry-run=true > dry-run-2.yaml
+
+
+
+
+```
+
+
+
+### pipeline sample1
+
+https://plugins.jenkins.io/kubernetes/
+
+
+
+```sh
+
+
+def label = "jenkins-agent-${UUID.randomUUID().toString()}"
+
+podTemplate(label: label, serviceAccount: G_SA, namespace: G_NAMESPACE, 
+containers: [
+    containerTemplate(name: 'maven', image: 'maven:3.8.1-jdk-8', command: 'sleep', args: '99d'),
+    containerTemplate(name: 'golang', image: 'golang:1.16.5', command: 'sleep', args: '99d')
+  ]) {
+    node('jenkins-agent') {
+        stage('Run shell1') {
+            sh 'echo hello world'
+        }
+        stage('Run shell2') {
+            container('jnlp') {
+                stage('Build a Maven project') {
+                    sh 'echo hello world2'
+                }
+            }
+        }
+    }
+}
+
+```
+
+
+
+### pipeline sample2
+
+```groovy
+podTemplate(containers: [
+    containerTemplate(name: 'maven', image: 'maven:3.8.1-jdk-8', command: 'sleep', args: '99d'),
+    containerTemplate(name: 'golang', image: 'golang:1.16.5', command: 'sleep', args: '99d')
+  ]) {
+
+    node('jenkins-agent') {
+        stage('Get a Maven project') {
+            git 'https://github.com/jenkinsci/kubernetes-plugin.git'
+            container('maven') {
+                stage('Build a Maven project') {
+                    sh 'mvn -B -ntp clean install'
+                }
+            }
+        }
+
+        stage('Get a Golang project') {
+            git url: 'https://github.com/hashicorp/terraform.git', branch: 'main'
+            container('golang') {
+                stage('Build a Go project') {
+                    sh '''
+                    mkdir -p /go/src/github.com/hashicorp
+                    ln -s `pwd` /go/src/github.com/hashicorp/terraform
+                    cd /go/src/github.com/hashicorp/terraform && make
+                    '''
+                }
+            }
+        }
+
+    }
+}
+
+```
+
+
+
+```groovy
+podTemplate(label: 'hello',
+	containers: [
+        containerTemplate(name: 'maven', image: 'maven:alpine', ttyEnabled: true, command: 'cat'),
+        containerTemplate(name: 'busybox', image: 'busybox', ttyEnabled: true, command: 'cat')
+  ]) {
+
+    node('hello') {
+        stage('Maven') {
+            container('maven') {
+                    sh 'mvn -version'
+               
+            }
+        }
+
+        stage('Busybox') {
+            container('busybox') {
+                    sh '/bin/busybox'
+            }
+        }
+    }
+}
+```
+
+
+
+
+
+```groovy
+
+pipeline {
+  agent {
+    kubernetes {
+      label 'hello'
+      yamlFile 'hello-pod-template.yaml'
+    }
+  }
+    stages {
+        stage('Maven') {
+          steps {
+            container('maven') {
+              sh 'mvn -version'
+            }
+          }
+        }
+        stage('Busybox') {
+            steps {
+                container('busybox') {
+                    sh '/bin/busybox'
+                }
+            }
+        }
+    }
+}
+
+```
 
 
 
