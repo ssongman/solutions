@@ -19,7 +19,13 @@ $ kubectl create ns jenkins-system
 
 
 
-## 2) helm chart - bitnami 
+## 2) helm chart - bitnami (X)
+
+==> 설치해보니 kubernetes 관련 plugin 을 수작업으로 셋팅해야 한다.
+
+==> 하지만 jenkins 공식 chart 를 이용하면 자동으로 설정된다.  그러므로 공식 chart 를 이용하자.
+
+
 
 ### helm chart download
 
@@ -45,7 +51,7 @@ $ tar -xzvf jenkins-12.11.0.tgz
 
 
 
-### dry-run
+### dry-run & Install
 
 ```sh
 
@@ -226,15 +232,7 @@ $ ll
 
 
 
-### pv/pvc 
-
-
-
-### sa
-
-
-
-### helm install
+###  dry-run & Install
 
 ```sh
 
@@ -268,144 +266,33 @@ $ helm -n jenkins-system upgrade jenkins . \
     --set controller.ingress.ingressClassName=traefik \
     --set controller.ingress.hostName=jenkins.ssongman.duckdns.org \
     --set agent.enabled=true \
-    --set persistence.enabled=false \
+    --set persistence.enabled=true \
     --dry-run=true > dry-run-2.yaml
 
 
 
+# 확인
+$ helm -n jenkins-system list
+NAME    NAMESPACE       REVISION        UPDATED                                 STATUS          CHART           APP VERSION
+jenkins jenkins-system  1               2024-04-17 17:38:29.254902403 +0900 KST deployed        jenkins-12.11.0 2.440.1
 
-```
-
-
-
-### pipeline sample1
-
-https://plugins.jenkins.io/kubernetes/
-
-
-
-```sh
-
-
-def label = "jenkins-agent-${UUID.randomUUID().toString()}"
-
-podTemplate(label: label, serviceAccount: G_SA, namespace: G_NAMESPACE, 
-containers: [
-    containerTemplate(name: 'maven', image: 'maven:3.8.1-jdk-8', command: 'sleep', args: '99d'),
-    containerTemplate(name: 'golang', image: 'golang:1.16.5', command: 'sleep', args: '99d')
-  ]) {
-    node('jenkins-agent') {
-        stage('Run shell1') {
-            sh 'echo hello world'
-        }
-        stage('Run shell2') {
-            container('jnlp') {
-                stage('Build a Maven project') {
-                    sh 'echo hello world2'
-                }
-            }
-        }
-    }
-}
-
-```
+NAME    NAMESPACE       REVISION        UPDATED                                 STATUS          CHART           APP VERSION
+jenkins jenkins-system  1               2024-04-18 15:29:50.01305582 +0900 KST  deployed        jenkins-5.1.6   2.440.3
 
 
 
-### pipeline sample2
 
-```groovy
-podTemplate(containers: [
-    containerTemplate(name: 'maven', image: 'maven:3.8.1-jdk-8', command: 'sleep', args: '99d'),
-    containerTemplate(name: 'golang', image: 'golang:1.16.5', command: 'sleep', args: '99d')
-  ]) {
-
-    node('jenkins-agent') {
-        stage('Get a Maven project') {
-            git 'https://github.com/jenkinsci/kubernetes-plugin.git'
-            container('maven') {
-                stage('Build a Maven project') {
-                    sh 'mvn -B -ntp clean install'
-                }
-            }
-        }
-
-        stage('Get a Golang project') {
-            git url: 'https://github.com/hashicorp/terraform.git', branch: 'main'
-            container('golang') {
-                stage('Build a Go project') {
-                    sh '''
-                    mkdir -p /go/src/github.com/hashicorp
-                    ln -s `pwd` /go/src/github.com/hashicorp/terraform
-                    cd /go/src/github.com/hashicorp/terraform && make
-                    '''
-                }
-            }
-        }
-
-    }
-}
-
-```
+# 삭제시...
+$ helm -n jenkins-system delete jenkins
 
 
-
-```groovy
-podTemplate(label: 'hello',
-	containers: [
-        containerTemplate(name: 'maven', image: 'maven:alpine', ttyEnabled: true, command: 'cat'),
-        containerTemplate(name: 'busybox', image: 'busybox', ttyEnabled: true, command: 'cat')
-  ]) {
-
-    node('hello') {
-        stage('Maven') {
-            container('maven') {
-                    sh 'mvn -version'
-               
-            }
-        }
-
-        stage('Busybox') {
-            container('busybox') {
-                    sh '/bin/busybox'
-            }
-        }
-    }
-}
 ```
 
 
 
 
 
-```groovy
-
-pipeline {
-  agent {
-    kubernetes {
-      label 'hello'
-      yamlFile 'hello-pod-template.yaml'
-    }
-  }
-    stages {
-        stage('Maven') {
-          steps {
-            container('maven') {
-              sh 'mvn -version'
-            }
-          }
-        }
-        stage('Busybox') {
-            steps {
-                container('busybox') {
-                    sh '/bin/busybox'
-                }
-            }
-        }
-    }
-}
-
-```
+plugin 설치
 
 
 
@@ -420,8 +307,6 @@ pipeline {
 ## 1) Kubernetes Pod로 Jenkins Agent 동적 생성
 
 
-
-https://www.whatap.io/ko/blog/77/
 
 
 
