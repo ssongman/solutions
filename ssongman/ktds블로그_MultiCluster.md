@@ -68,7 +68,7 @@ Cluster1, Cluster2 를 하나의 클러스터로 연결했기 때문에 Cluster 
 
 
 
-**※ Redis**
+**※ 참고 : Redis**
 
 - **개발자**: Redis Ltd.
 - **라이선스**: BSD 라이선스
