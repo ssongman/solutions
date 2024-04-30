@@ -158,11 +158,11 @@ Kubernetes에서 멀티 클러스터 구성을 지원하는 CNI tool 들이 많�
 
 **※ 참고 : Cilium**
 
-- **개발자**: Oracle Corporation
-- **라이선스**: GPL
-- **웹사이트**: [MySQL 공식 웹사이트](https://www.mysql.com/)
+- **개발자**: Cilium 커뮤니티
+- **라이선스**: Apache License 2.0
+- **웹사이트**: [Cilium 공식 웹사이트](https://cilium.io/)
 
-##### 
+
 
 Cilium을 활용하여 멀티 클러스터를 구성해 보자.
 
