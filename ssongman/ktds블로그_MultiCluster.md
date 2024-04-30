@@ -14,15 +14,15 @@
 
 컨테이너 오케스트레이션 도구로 많은 제품들이 존재하지만 대부분의 기업들은 Kubernetes 를 선택하고 있으며 기술적으로 완성도를 높여 나가고 있는 추세이다.  컨테이너 기술 채택이라는 과제를 극복한 이후에는 구성을 확장하는 것을 고려 해야 한다.
 
-계속 해서 증가되는 컨테이너 AP 들을 충족하기 위해 더 많은 Cluster가 필요하다. 또한 단순 장애를 넘어 재해를 대비한 안정성을 위해 원거리 지역에 위치한 Cluster도 고려해야 한다.
+계속 해서 증가되는 컨테이너 AP 들을 충족하기 위해 더 많은 Cluster가 필요하다. 또한 단순 장애를 넘어 재해를 대비한 안정성을 위한다면 원거리 지역에 위치한 Cluster도 생각해 볼 수 있다.
 
-단일 클러스터에서는 쉽게 해결될 수 있는 이슈이지만 이런 다중화된 클러스터 환경에서는 관리 및  기술 난이도가 높아질 수 밖에 없다. 본 글에서는 다수의 클러스터를 하나의 거대한 클러스터처럼 사용할 수 있는 멀티 클러스터에 대해서 살펴본다.
+단일 클러스터에서는 쉽게 해결될 수 있는 이슈이지만 이런 다중화된 클러스터 환경에서는 관리 및 기술 난이도가 높아질 수 밖에 없다. 본 글에서는 다수의 클러스터를 하나의 거대한 클러스터처럼 사용할 수 있는 멀티 클러스터에 대해서 살펴본다.
 
 
 
 ## 1) 클러스터 확장의 필요성
 
-물론 단일 클러스터를 사용중 리소스가 부족할때 Worker Node 를 추가하여 늘어날 수 있지만 클러스터당 한계에 도달할 수 있다.  그러므로 더 많은 자원을 확보하기 위해 클러스터 확장이 필요하다.  그리고 지역을 분산하여 클러스터를 배치하게 되면 장애 및 재해시 서비스 중단을 최소화하고 고가용성을 달성할 수 있다. 또한 지역 간 로드 밸런싱을 통해 지역별 트래픽을 효과적으로 관리할 수 있다.  이러한 사유로 클러스터 확장을 반드시 고려해야 한다.
+물론 단일 클러스터에서 리소스가 부족시에 Worker Node를 추가할 수 있지만 클러스터당 한계에 도달할 수 있다.  그러므로 더 많은 자원을 확보하기 위해 클러스터 단위의 확장이 필요하다.  그리고 지역을 분산하여 클러스터를 배치하게 되면 장애 및 재해시 서비스 중단을 최소화하고 고가용성을 달성할 수 있다. 또한 지역 간 로드 밸런싱을 통해 지역별 트래픽을 효과적으로 관리할 수 있다.  이러한 사유로 클러스터 확장을 반드시 고려해야 한다.
 
 
 
@@ -46,11 +46,11 @@
 
 ## 1) 사례1. Redis Cluster
 
-Redis Cluster의 경우 N개의 Redis Node 로 구성된다. Client에서 Read 시도시 Data가 존재하는 Node 로 Redirect 되며 이때 Client 는 Redirect 된 Node 주소를 인식가능 해야 한다.
+Redis Cluster의 경우 N개의 Redis Node로 구성된다. Client에서 Read 시도시 Data가 존재하는 Node로 Redirect 되며 이때 Client는 Redirect 된 Node 주소를 인식가능 해야 한다.
 
-만약 Client 가 다른 클러스터에 위치해 있다고 가정해 보자. K8s 클러스터간 통신은 일반적으로 Rest 만 지원 가능하므로 Ingress 를 통한 통신은 허용하지 않는다. 또한 Redirect을 고려하여 Node 별 인식가능한 구조로 구성해야 한다. 그러므로 타 Cluster에서 접근을 위해서 Client에서 인식가능한 Worker Node IP 와 Host Port 를 사용한 아키텍처로 구성해야 한다. Container 환경에서는 가급적 지양 해야 하는 HostPort 을 사용하는 방안이며 설치 및 운용의 복잡도가 증가한다.
+만약 Client 가 Redis와 다른 클러스터에 위치해 있다고 가정해 보자. K8s 클러스터간 통신은 일반적으로 Rest 만 지원 가능하므로 Ingress 를 통한 통신은 허용하지 않는다. 또한 Redirect을 고려하여 Node 별 인식가능한 구조로 구성해야 한다. 그러므로 타 Cluster에서 Redis 를 접근하기 위해서는 Client에서도 인식가능한 Worker Node IP 와 Host Port 를 사용한 아키텍처로 구성해야 한다.  이러한 구성 방안은 Container 환경에서는 가급적 지양 하는 HostPort 을 사용하고 있으며 설치 및 운용의 복잡도가 증가한다.
 
-6개의 node 로 구성된 Redis Cluster 라고 가정한 아키텍처를 살펴보자.
+아래는 6개의 node 로 구성된 Redis Cluster 라고 가정한 아키텍처이다.
 
 
 
@@ -68,17 +68,23 @@ Cluster1, Cluster2 를 하나의 클러스터로 연결했기 때문에 Cluster 
 
 
 
+**※ Redis**
+
+- **개발자**: Redis Ltd.
+- **라이선스**: BSD 라이선스
+- **웹사이트**: [Redis 공식 웹사이트](https://redis.io/)
+
 
 
 
 
 ## 2) 사례2. Airflow Rest Call
 
-Batch Work Flow 용도의 오픈소스인 Airflow 라는 솔루션의 사례를 살펴보자.
+Batch Work Flow 용도의 오픈소스인 Airflow 라는 솔루션의 사례에서도 비슷한 사례를 볼수 있다.
 
 해당 Airflow는 특정 클러스터에 위치해 있고 다른 클러스터에 위치한 Batch(AP)를 Rest로 Call 해야 하는 상황이라고 가정하자.  단일 클러스터라면 k8s Service 로 Rest Call 만으로 해결 되겠지만 다른 클러스터에 위치한 AP를 실행하기 위해서는 Ingress가 필요하다. 상황에 따라서는 해당 Ingress를 위해 별도 인증서를 구입해하며 불필요한 Call 을 막기 위해 인증 토큰이나 권한 체크 프로세스도 포함되어야 한다.  또한 해당 인증서를 연단위로 갱신하는 등 추가적인 관리가 필요하다.
 
-원격 클러스터에 호출되는 Airflow 아키텍처를 살펴보자.
+아래는 원격 클러스터에 호출되는 Airflow 아키텍처이다.
 
 ![image-12](./ktds블로그_MultiCluster.assets/image-12.png)
 
@@ -92,6 +98,12 @@ Batch 실행이 필요한 AP들이 동일한 클러스터로 간주되므로 Kub
 
 
 
+**※ 참고 : Airflow**
+
+- **개발자**: Apache Software Foundation
+- **라이선스**: Apache License 2.0
+- **웹사이트**: [Apache Airflow 공식 웹사이트](https://airflow.apache.org/)
+
 
 
 ## 3) 사례3. Elastic Stack Data 수집
@@ -100,7 +112,7 @@ Batch 실행이 필요한 AP들이 동일한 클러스터로 간주되므로 Kub
 
 각 클러스터에서 발생하는 지표들을 특정 클러스터에 위치하는 Elastic Search 에 저장하게 되는데, 이 또한 클러스터간 통신이 필요하다. 그러므로 클러스터 경계에는 각각 Ingress가 필요하며 이에 따라 Domain 및 인증서 관리가 되어야 한다.
 
-클러스터간 Elastic Data(Metric,Log,APM) 전송 아키텍처를 살펴보자.
+아래는 클러스터간 Elastic Data(Metric,Log,APM)를 전송하는 일반적인 아키텍처 이다.
 
 ![image-14](./ktds블로그_MultiCluster.assets/image-14.png)
 
@@ -111,6 +123,14 @@ Batch 실행이 필요한 AP들이 동일한 클러스터로 간주되므로 Kub
 2개의 Cluster 가 한개로 간주되며 (Kubernetes) Service Call 만으로 접근 가능하다.  전체적으로 복잡도가 낮아지며 관리포인트가 줄어들거나 존재하지 않기 때문에 꽤 괜찮은 아키텍처이다.
 
 ![image-15](./ktds블로그_MultiCluster.assets/image-15.png)
+
+
+
+**※ 참고 : Elastic Stack**
+
+- **개발자**: Elastic NV
+- **라이선스**: Elastic License
+- **웹사이트**: [Elastic 공식 웹사이트](https://www.elastic.co/)
 
 
 
@@ -136,6 +156,14 @@ Kubernetes에서 멀티 클러스터 구성을 지원하는 CNI tool 들이 많�
 
 클러스터의 CNI로 Cilium을 채택한다면 각 클러스터별 메시를 통해 모든 클러스터의 서비스를 검색하고 액세스할 수 있다. 또한 여러 클러스터를 대규모로 통합한 네트워크에 효과적으로 결합할 수 있다.
 
+**※ 참고 : Cilium**
+
+- **개발자**: Oracle Corporation
+- **라이선스**: GPL
+- **웹사이트**: [MySQL 공식 웹사이트](https://www.mysql.com/)
+
+##### 
+
 Cilium을 활용하여 멀티 클러스터를 구성해 보자.
 
 
@@ -159,10 +187,6 @@ Cilium은 클러스터간 동일한 Namespace, Service를 글로벌 Service로 �
 
 
 ![image-22](./ktds블로그_MultiCluster.assets/image-22.png)
-
-
-
-
 
 
 
