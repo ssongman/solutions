@@ -54,7 +54,7 @@ metrics-server는 Kubernetes 클러스터의 리소스 사용량 및 성능 데�
 
 K3s 아키텍처를 살펴보자.
 
-![img](Untitled.assets/how-it-works-k3s-revised-9c025ef482404bca2e53a89a0ba7a3c5.svg)
+![img](ktds블로그_k3s.assets/how-it-works-k3s-revised-9c025ef482404bca2e53a89a0ba7a3c5.svg)
 
 
 
