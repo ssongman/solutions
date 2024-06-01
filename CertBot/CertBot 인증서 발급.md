@@ -70,7 +70,7 @@ $ ll
 
 
 
-#### txt 정보 추출
+### TXT Record 정보 추출
 
 ```sh
 
@@ -133,7 +133,7 @@ OK
 
 Certbot DNS 플러그인 스크립트 준비
 
-#### 실행파일 작성
+### 실행파일 작성
 
 ```sh
 $ cat > certbot-dns-duckdns.sh
@@ -171,7 +171,7 @@ sleep 30
 
 
 
-#### 실행권한 부여
+### 실행권한 부여
 
 ```sh
 
@@ -181,7 +181,7 @@ $ chmod +x certbot-dns-duckdns.sh
 
 
 
-#### 발급전 확인
+### 발급전 확인
 
 ```sh
 
@@ -219,7 +219,7 @@ $ sudo certbot certonly \
 
 
 
-#### 로그
+### 로그
 
 ```
 ...
@@ -248,7 +248,7 @@ If you like Certbot, please consider supporting our work by:
 
 
 
-## 5) **Kubernetes 시크릿 생성**
+## 6) **Kubernetes 시크릿 생성**
 
 발급된 인증서를 Kubernetes 시크릿으로 생성합니다.
 
@@ -270,7 +270,7 @@ dio-wildcard-cert   kubernetes.io/tls   2      13s
 
 
 
-## 6) **Ingress 리소스 구성**
+## 7) **Ingress 리소스 구성**
 
 Traefik Ingress 리소스에서 생성한 시크릿을 사용하도록 설정합니다.
 
@@ -320,12 +320,13 @@ https://userlist.diopro.duckdns.org
 
 
 
-## 7) 자동 갱신 설정
+## 8) 자동 갱신 설정
 
-Certbot 인증서를 자동 갱신하도록 크론잡을 설정합니다.
+Certbot 인증서를 자동 갱신하도록 크론잡을 설정한다.
 
 ```sh
 
+# 매일 0시에 수행하는 예제
 echo "0 0 * * 0 certbot renew --manual-auth-hook ./certbot-dns-duckdns.sh --quiet --renew-hook 'kubectl create secret tls wildcard-cert --cert=/etc/letsencrypt/live/diopro.duckdns.org/fullchain.pem --key=/etc/letsencrypt/live/diopro.duckdns.org/privkey.pem --namespace default --dry-run'" | sudo tee -a /etc/crontab > /dev/null
 
 
