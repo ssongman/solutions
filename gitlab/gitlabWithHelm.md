@@ -229,24 +229,31 @@ http://gitlab16.ssongman.duckdns.org
 
 ### (2) 인증정보
 
-```
-secret 에서 확인
+* 초기 패스워드 확인 및 변경
 
+```sh
+
+$ kubectl -n gitlab-system get secret gitlab-gitlab-initial-root-password
+
+NAME                                  TYPE     DATA   AGE
+gitlab-gitlab-initial-root-password   Opaque   1      3m41s
+
+---
+
+# secret 에서 확인
 $ echo OEh0S3RrWVhQZmtua3dtMk9SUzl2MTlwUk9zUXpJbVFtUzR4UkZuNXVvSDdaY1drVXVsc0pCZHRKdFZpMzBhWg== | base64 -d
-
 8HtKtkYXPfknkwm2ORS9v19pROsQzImQmS4xRFn5uoH7ZcWkUulsJBdtJtVi30aZ
 ----
 
 
 user : root 
 password: 8HtKtkYXPfknkwm2ORS9v19pROsQzImQmS4xRFn5uoH7ZcWkUulsJBdtJtVi30aZ
-password: new****!
 
 
-
-
+# password 변경
+# 메뉴 : User Settings > Edit Password
 login : root
-password : ******
+password: new****!
 
 
 ```
