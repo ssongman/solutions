@@ -80,11 +80,12 @@ https://www.digwebinterface.com/?hostnames=diopro.duckdns.org&type=TXT&ns=resolv
 # dig commander 로 확인
 $ dig diopro.duckdns.org TXT
 
+$ dig diopro.duckdns.org TXT
 
 ; <<>> DiG 9.18.18-0ubuntu0.22.04.2-Ubuntu <<>> diopro.duckdns.org TXT
 ;; global options: +cmd
 ;; Got answer:
-;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 18493
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 40265
 ;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1
 
 ;; OPT PSEUDOSECTION:
@@ -93,16 +94,39 @@ $ dig diopro.duckdns.org TXT
 ;diopro.duckdns.org.            IN      TXT
 
 ;; ANSWER SECTION:
-diopro.duckdns.org.     60      IN      TXT     "test-validation-string"
+diopro.duckdns.org.     60      IN      TXT     "YgbFXH6coU-xTaZp7dXHw6q5yBE-2PpS-CwmfN4QMRQ"
 
-;; Query time: 191 msec
+;; Query time: 208 msec
 ;; SERVER: 127.0.0.53#53(127.0.0.53) (UDP)
-;; WHEN: Sat Jun 01 18:15:55 UTC 2024
-;; MSG SIZE  rcvd: 82
+;; WHEN: Sat Jun 01 22:43:54 UTC 2024
+;; MSG SIZE  rcvd: 103
+
+song@dio-bastion01:~$
+song@dio-bastion01:~$
+song@dio-bastion01:~$ dig www.diopro.duckdns.org TXT
+
+; <<>> DiG 9.18.18-0ubuntu0.22.04.2-Ubuntu <<>> www.diopro.duckdns.org TXT
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 58939
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 65494
+;; QUESTION SECTION:
+;www.diopro.duckdns.org.                IN      TXT
+
+;; ANSWER SECTION:
+www.diopro.duckdns.org. 60      IN      TXT     "YgbFXH6coU-xTaZp7dXHw6q5yBE-2PpS-CwmfN4QMRQ"
+
+;; Query time: 236 msec
+;; SERVER: 127.0.0.53#53(127.0.0.53) (UDP)
+;; WHEN: Sat Jun 01 22:44:15 UTC 2024
+;; MSG SIZE  rcvd: 107
 
 
 ## TXT record는 아래 와 같다.
-# test-validation-string
+# "YgbFXH6coU-xTaZp7dXHw6q5yBE-2PpS-CwmfN4QMRQ"
 
 ```
 
@@ -117,7 +141,7 @@ https://www.duckdns.org/update?domains=<your-domain>&token=<your-token>&txt=<you
 
 
 # browser 에서 확인
-https://www.duckdns.org/update?domains=diopro.duckdns.org&token=b96c3111-1d68-447f-a66c-3d7ac69ab34d&txt=test-validation-string
+https://www.duckdns.org/update?domains=diopro.duckdns.org&token=b96c3111-1d68-447f-a66c-3d7ac69ab34d&txt=YgbFXH6coU-xTaZp7dXHw6q5yBE-2PpS-CwmfN4QMRQ
 
 OK
 
@@ -186,9 +210,9 @@ $ chmod +x certbot-dns-duckdns.sh
 ```sh
 
 $
-export CERTBOT_DOMAIN="diopro.duckdns.org"
-export CERTBOT_VALIDATION="test-validation-string"
-./certbot-dns-duckdns.sh
+  export CERTBOT_DOMAIN="diopro.duckdns.org"
+  export CERTBOT_VALIDATION="YgbFXH6coU-xTaZp7dXHw6q5yBE-2PpS-CwmfN4QMRQ"
+  ./certbot-dns-duckdns.sh
 
 
 DuckDNS update response: OK
