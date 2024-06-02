@@ -56,7 +56,6 @@ Harbor는 대표적인 Private registry 오픈소스이며, 컨테이너 이미�
 ## 1) Namespace
 
 ```sh
-
 $ kubectl create ns harbor
 
 ```
@@ -70,8 +69,6 @@ $ kubectl create ns harbor
 ###  (1) bitnami chart (실패)
 
 ```sh
-
-
 $ helm search repo harbor
 NAME            CHART VERSION   APP VERSION     DESCRIPTION
 bitnami/harbor  20.1.2          2.10.0          Harbor is an open source trusted cloud-native r...
@@ -204,8 +201,6 @@ $ helm -n harbor uninstall harbor
 #### [참고] helm upgrade 
 
 ```sh
-
-
 $ helm -n harbor upgrade --install harbor . \
     --set adminPassword=adminpass \
     --set exposureType=ingress \
@@ -293,7 +288,6 @@ harbor  harbor          2               2024-03-17 23:37:33.678058148 +0900 KST 
 ###  (2) harbor chart(성공)
 
 ```sh
-
 # helm repo 등록
 $ helm repo add harbor https://helm.goharbor.io
 
@@ -522,8 +516,6 @@ cp ca.crt /etc/docker/certs.d/100.100.103.167/
 
 ```sh
 
-
-
 $ kubectl -n harbor get pod
 NAME                                 READY   STATUS    RESTARTS      AGE
 harbor-core-7c59bd7465-k6skn         1/1     Running   0             16m
@@ -601,8 +593,6 @@ harbor_registry_password
 * harbor-core 로그
 
 ```sh
-
-
 2024-03-18T01:58:20Z [DEBUG] [/server/middleware/log/log.go:31]: attach request id df0502cc-aefd-43a6-a3b3-76701bcb2180 to the logger for the request POST /c/login
 2024-03-18T01:58:20Z [DEBUG] [/lib/http/error.go:62]: {"errors":[{"code":"FORBIDDEN","message":"CSRF token invalid"}]}
 
@@ -657,7 +647,6 @@ bastion 에서 pull / push 해 보자.
 ### (1) login 
 
 ```sh
-
 $ docker logout https://harbor.ssongman.duckdns.org
 
 $ docker login https://harbor.ssongman.duckdns.org
@@ -686,7 +675,6 @@ Login Succeeded
 아래와 같이 insecure-registres 에 등록해 줘야 한다.
 
 ```sh
-
 $ docker login harbor.ssongman.duckdns.org
 Username: admin
 Password: 
@@ -752,8 +740,6 @@ sudo dockerd --insecure-registry [nexus.ssongman.duckdns.org:5000] -tls=false
 #### 인증서 등록
 
 ```sh
-
-
 $ kubectl -n harbor get secret  harbor-ingress harbor-ingress -o yaml
 
 
@@ -813,7 +799,6 @@ enWIlpIQ4mRSnbaxl3mrwqPA6/HjfJiS
 ### (1) push test
 
 ```sh
-
 $ docker pull ssongman/userlist:v1
 $ docker pull nginx
 
@@ -880,7 +865,6 @@ $ docker push harbor.ssongman.duckdns.org/app/nginx
 
 
 ```sh
-
 # error 확인
 $ docker push nexus-repo.ssongman.duckdns.org:80/ssongman/userlist:v1
 eec0e531f0de: Preparing
@@ -972,8 +956,6 @@ $ curl https://nexus-repo.ssongman.duckdns.org/v2 -k
 
 
 ```sh
-
-
 # 확인
 $ docker images
 REPOSITORY                                             TAG               IMAGE ID       CREATED         SIZE
@@ -1021,7 +1003,6 @@ harbor.ssongman.duckdns.org/app/userlist               v1.0.1            bf0cd99
 ### sample
 
 ```sh
-
 $ helm version
 version.BuildInfo{Version:"v3.12.0", GitCommit:"c9f554d75773799f72ceef38c51210f1842a1dea", GitTreeState:"clean", GoVersion:"go1.20.3"}
 
@@ -1047,7 +1028,6 @@ $ helm install --ca-file=ca.crt --username=admin --password=Passw0rd --version 0
 ### smaple(nginx) pull
 
 ```sh
-
 $ cd ~/song/del
 
 $ helm pull nginx \
@@ -1066,7 +1046,6 @@ $ ll
 ### login / push
 
 ```sh
-
 $ helm registry login -u admin https://harbor.ssongman.duckdns.org --ca-file ca.crt 
 
 
@@ -1116,7 +1095,6 @@ $ helm repo add \
 ### package
 
 ```sh
-
 # Chart.yaml의 이름 및 버전을 사용하여 파일로 저장
 $ helm package .
 
@@ -1131,7 +1109,6 @@ $ helm package .
 harbor에서 다운로드 가능
 
 ```sh
-
 $ cd ~/song/del/ca.crt
 
 -----BEGIN CERTIFICATE-----
@@ -1192,8 +1169,6 @@ enWIlpIQ4mRSnbaxl3mrwqPA6/HjfJiS
 
 
 ```sh
-
-
 $ docker pull harbor.ssongman.duckdns.org/app2/userlist:v1.0.1
 
 Error response from daemon: unknown: resource not found: repo app2/userlist, tag v1 not found
@@ -1228,7 +1203,6 @@ Error response from daemon: unknown: resource not found: repo ssongman/userlist,
 ## 1) brower 에서 확인하는 방법
 
 ```sh
-
 http://nexus.ssongman.duckdns.org/#browse/browse:docker-registry
 
 http://nexus.ssongman.duckdns.org/repository/docker-registry/v2/ssongman/userlist/manifests/v1
@@ -1282,7 +1256,6 @@ $ curl --user "dockerpushuser:songpass" \
 ## 2) api 확인
 
 ```sh
-
 $ curl --user "admin:adminpass" \
      https://harbor.ssongman.duckdns.org/v2/_catalog -k
      
@@ -1349,8 +1322,6 @@ harbor 는 container 위주의 repo 라서 안되는듯 하다.
 #### jenkins build pipeline sample
 
 ```groovy
-
-
 def moduleBuildOnlyJar(version){
 	return """
 		
@@ -1808,8 +1779,6 @@ $ curl -X 'GET' \
 ### Project infomation
 
 ```sh
-
-
 $ curl -X 'GET' \
   'https://harbor.ssongman.duckdns.org/api/v2.0/projects/app' \
   -H 'accept: application/json' \
@@ -1848,7 +1817,6 @@ $ curl -X 'GET' \
 ### Repository 목록
 
 ```sh
-
 $ curl -X 'GET' \
   'https://harbor.ssongman.duckdns.org/api/v2.0/projects/app/repositories?page=1&page_size=10' \
   -H 'accept: application/json'
@@ -1888,7 +1856,6 @@ $ curl -X 'GET' \
 ### arifact info
 
 ```sh
-
 $ curl -X 'GET' \
   'https://harbor.ssongman.duckdns.org/api/v2.0/projects/app/repositories/userlist/artifacts?page=1&page_size=10&with_tag=true&with_label=false&with_scan_overview=false&with_signature=false&with_immutable_status=false&with_accessory=false' \
   -H 'accept: application/json' \
@@ -1980,7 +1947,6 @@ $ curl -X 'GET' \
 ### arifact tags
 
 ```sh
-
 $ curl -X 'GET' \
   'https://harbor.ssongman.duckdns.org/api/v2.0/projects/app/repositories/userlist/artifacts/v1/tags?page=1&page_size=10&with_signature=false&with_immutable_status=false' \
   -H 'accept: application/json'
@@ -2021,8 +1987,6 @@ $ curl -X 'GET' \
 
 
 ```sh
-
-
 $ curl -X 'DELETE' \
   'https://harbor.ssongman.duckdns.org/api/v2.0/projects/app/repositories/userlist/artifacts/v1.0.1/tags/v1.0.1' \
   -H 'accept: application/json' \
