@@ -84,15 +84,23 @@ $ tar -xzvf gitlab-7.7.0.tgz
 
 ```sh
 
-$ helm -n gitlab ls 
+$ helm -n gitlab-system ls 
 
 $ cd ~/song/helm/gitlab
-$ helm -n gitlab install gitlab . \
+
+
+# ns 
+$ kubectl create ns gitlab-system
+
+
+#$ helm -n gitlab-system install gitlab . \
+
+$ helm -n gitlab-system install gitlab gitlab/gitlab \
   --timeout 600s \
   --set certmanager-issuer.email=ssongmantop@gmail.com \
   --set global.edition=ce \
   --set global.hosts.https=false \
-  --set global.hosts.gitlab.name=gitlab16.ssongman.duckdns.org \
+  --set global.hosts.gitlab.name=gitlab.songedu.duckdns.org \
   --set global.hosts.gitlab.https=false            \
   --set global.ingress.provider=traefik            \
   --set global.ingress.class=traefik               \
@@ -125,11 +133,11 @@ $ helm -n gitlab install gitlab . \
 
 
 NAME: gitlab
-LAST DEPLOYED: Wed Jan 10 00:37:03 2024
-NAMESPACE: gitlab
+LAST DEPLOYED: Fri Jun  7 15:52:00 2024
+NAMESPACE: gitlab-system
 STATUS: deployed
 REVISION: 1
-NOTES:
+
 === CRITICAL
 The following charts are included for evaluation purposes only. They will not be supported by GitLab Support
 for production workloads. Use Cloud Native Hybrid deployments for production. For more information visit
@@ -153,9 +161,9 @@ Help us improve the installation experience, let us know how we did with a 1 min
 ### (2) upgrade install
 
 ```sh
-$ helm -n gitlab ls 
+$ helm -n gitlab-system ls 
 
-$ helm -n gitlab upgrade --install gitlab . \
+$ helm -n gitlab-system upgrade --install gitlab . \
   --timeout 600s \
   --set certmanager-issuer.email=ssongmantop@gmail.com \
   --set global.edition=ce \
@@ -193,9 +201,12 @@ $ helm -n gitlab upgrade --install gitlab . \
 ---
 
 
-$ helm -n gitlab list
+$ helm -n gitlab-system list
 NAME    NAMESPACE       REVISION        UPDATED                                 STATUS          CHART           APP VERSION
 gitlab  gitlab          2               2024-01-10 00:54:07.695846165 +0900 KST deployed        gitlab-7.7.0    v16.7.0
+
+NAME    NAMESPACE       REVISION        UPDATED                                 STATUS          CHART           APP VERSION
+gitlab  gitlab-system   1               2024-06-07 15:52:00.599995998 +0000 UTC deployed        gitlab-8.0.1    v17.0.1
 
 
 
@@ -217,6 +228,8 @@ gitlab  gitlab          2               2024-01-10 00:54:07.695846165 +0900 KST 
 
 ```
 http://gitlab16.ssongman.duckdns.org
+
+http://gitlab.songedu.duckdns.org
 
 
 ```
@@ -240,14 +253,23 @@ gitlab-gitlab-initial-root-password   Opaque   1      3m41s
 
 ---
 
+
+$ kubectl -n gitlab-system get secret gitlab-gitlab-initial-root-password -o yaml
+
+
+
+
 # secret 에서 확인
-$ echo OEh0S3RrWVhQZmtua3dtMk9SUzl2MTlwUk9zUXpJbVFtUzR4UkZuNXVvSDdaY1drVXVsc0pCZHRKdFZpMzBhWg== | base64 -d
+$ echo VEFGUFR0aFBydWZnU3hNTVJOTmg0SXBnRTRQcENhOXZHRmZ3clFxTFlWWHlJeWZ5eXJPMkZXcjRneGNybzEwNw== | base64 -d
 8HtKtkYXPfknkwm2ORS9v19pROsQzImQmS4xRFn5uoH7ZcWkUulsJBdtJtVi30aZ
 ----
+TAFPTthPrufgSxMMRNNh4IpgE4PpCa9vGFfwrQqLYVXyIyfyyrO2FWr4gxcro107
+
 
 
 user : root 
 password: 8HtKtkYXPfknkwm2ORS9v19pROsQzImQmS4xRFn5uoH7ZcWkUulsJBdtJtVi30aZ
+password: TAFPTthPrufgSxMMRNNh4IpgE4PpCa9vGFfwrQqLYVXyIyfyyrO2FWr4gxcro107
 
 
 # password 변경
