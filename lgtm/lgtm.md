@@ -33,11 +33,18 @@ helm repo add grafana https://grafana.github.io/helm-charts
 helm repo update
 ```
 
+
+
+
 #### 2.1 Loki 설치
 Loki는 로그 수집 시스템입니다. Loki를 설치하려면 다음 명령어를 사용합니다.
 
 ```bash
-helm install loki grafana/loki-stack
+
+kubectl create ns lgtm
+
+
+kubec -n lgtm install loki grafana/loki-stack
 ```
 
 #### 2.2 Grafana 설치
