@@ -8,65 +8,139 @@ LGTM 스택은 Loki, Grafana, Tempo, Mimir의 약자로, 로그, 메트릭, 트�
 이 스택을 Kubernetes에 설치하는 방법을 살펴본다.
 
 
+
+
 ### 1. 준비 작업
 
 #### 1.1 Helm 설치 (필요한 경우)
 Helm이 설치되어 있지 않다면, 아래 명령어로 설치합니다.
 
 ```bash
-curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+$ curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 ```
 
+
+
 #### 1.2 Kubernetes 클러스터 확인
+
 Kubernetes 클러스터가 준비되었는지 확인합니다.
 
 ```bash
 kubectl get nodes
 ```
 
+
+
+#### 1.2 Namespace 생성
+
+```bash
+kubectl create ns lgtm
+
+```
+
+
+
 ### 2. LGTM 스택 설치
 
 Grafana Labs에서 제공하는 Helm 차트를 사용해 LGTM 스택을 설치할 수 있습니다. Grafana의 Helm 리포지토리를 추가하고 업데이트합니다.
 
 ```bash
-helm repo add grafana https://grafana.github.io/helm-charts
-helm repo update
+$ helm repo add grafana https://grafana.github.io/helm-charts
+$ helm repo update
+
 ```
 
 
 
 
 #### 2.1 Loki 설치
-Loki는 로그 수집 시스템입니다. Loki를 설치하려면 다음 명령어를 사용합니다.
+Loki는 로그 수집 시스템이다.
 
 ```bash
 
-kubectl create ns lgtm
+$ helm search repo loki
+
+NAME                            CHART VERSION   APP VERSION     DESCRIPTION
+bitnami/grafana-loki            4.6.11          3.1.1           Grafana Loki is a horizontally scalable, highly...
+grafana/loki                    6.10.0          3.1.1           Helm chart for Grafana Loki and Grafana Enterpr...
+grafana/loki-canary             0.14.0          2.9.1           Helm chart for Grafana Loki Canary
+grafana/loki-distributed        0.79.3          2.9.8           Helm chart for Grafana Loki in microservices mode
+grafana/loki-simple-scalable    1.8.11          2.6.1           Helm chart for Grafana Loki in simple, scalable...
+grafana/loki-stack              2.10.2          v2.9.3          Loki: like Prometheus, but for logs.
 
 
-kubec -n lgtm install loki grafana/loki-stack
+$ helm fetch grafana/loki-stack
+
+$ cd ~/helm/charts/loki-stack
+
+$ helm -n lgtm install loki . \
+    --dry-run=true > 11.dry-run.yaml
+
 ```
 
+ Loki를 설치면 loki와 loki-promtail이 daemonset 으로 설치된다.
+
+
+
+
+
 #### 2.2 Grafana 설치
+
 Grafana는 시각화 도구로, 다양한 데이터 소스를 연결할 수 있습니다. Grafana를 설치하려면 아래 명령어를 사용합니다.
 
 ```bash
-helm install grafana grafana/grafana
+
+
+$ helm search repo grafana
+
+NAME                            CHART VERSION   APP VERSION     DESCRIPTION
+bitnami/grafana-loki            4.6.11          3.1.1           Grafana Loki is a horizontally scalable, highly...
+grafana/loki                    6.10.0          3.1.1           Helm chart for Grafana Loki and Grafana Enterpr...
+grafana/loki-canary             0.14.0          2.9.1           Helm chart for Grafana Loki Canary
+grafana/loki-distributed        0.79.3          2.9.8           Helm chart for Grafana Loki in microservices mode
+grafana/loki-simple-scalable    1.8.11          2.6.1           Helm chart for Grafana Loki in simple, scalable...
+grafana/loki-stack              2.10.2          v2.9.3          Loki: like Prometheus, but for logs.
+
+$ cd ~/helm/charts
+$ helm fetch grafana/grafana
+
+
+
+
+$ cd ~/helm/charts/grafana
+
+
+$ helm install grafana . \
+    --set ingress.enabled=true \
+    --set hosts[0]=
+
+
+
 ```
 
+
+
+
+
 #### 2.3 Tempo 설치
+
 Tempo는 트레이싱 데이터를 수집하는 데 사용됩니다. Tempo를 설치하려면 다음 명령어를 실행합니다.
 
 ```bash
 helm install tempo grafana/tempo
 ```
 
+
+
 #### 2.4 Mimir 설치
+
 Mimir는 메트릭을 수집하고 처리하는 솔루션입니다. Mimir를 설치하려면 아래 명령어를 사용합니다.
 
 ```bash
 helm install mimir grafana/mimir
 ```
+
+
 
 ### 3. 배포 상태 확인
 
