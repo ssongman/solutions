@@ -40,7 +40,7 @@ kubectl create ns lgtm
 
 
 
-# 2. LGTM 스택 설치
+# 2. Loki Grafana 설치
 
 Grafana Labs에서 제공하는 Helm 차트를 사용해 LGTM 스택을 설치할 수 있습니다. Grafana의 Helm 리포지토리를 추가하고 업데이트합니다.
 
@@ -112,7 +112,7 @@ $ helm -n lgtm delete loki
 
 ### (2) Loki
 
-
+#### helm repo 준비
 
 ```sh
 
@@ -125,13 +125,13 @@ helm repo update
 
 
 
-values.yaml
+#### values_v1.yaml
 
 ```
 loki:
   schemaConfig:
     configs:
-      - from: 2024-04-01
+      - from: 2024-08-01
         store: tsdb
         object_store: s3
         schema: v13
@@ -146,14 +146,14 @@ loki:
     # Default is 4, if you have enough memory and CPU you can increase, reduce if OOMing
     max_concurrent: 4
 
-#gateway:
-#  ingress:
-#    enabled: true
-#    hosts:
-#      - host: FIXME
-#        paths:
-#          - path: /
-#            pathType: Prefix
+gateway:
+  ingress:
+    enabled: true
+    hosts:
+      - host: loki.lgtm.ssongman.com
+        paths:
+          - path: /
+            pathType: Prefix
 
 deploymentMode: Distributed
 
@@ -199,20 +199,27 @@ singleBinary:
 
 
 
-
+#### helm install
 
 
 
 ```sh
 
 
-helm install --values values.yaml loki grafana/loki
+helm -n lgtm install --values values_v1.yaml loki grafana/loki
 
 
 # 참고 Upgrade 시...
-helm upgrade --values values.yaml loki grafana/loki
+helm -n lgtm upgrade --values values.yaml loki grafana/loki
 
 
+
+# 확인
+helm -n lgtm list
+
+
+# 삭제시...
+helm -n lgtm delete loki
 
 
 ```
@@ -221,17 +228,41 @@ helm upgrade --values values.yaml loki grafana/loki
 
 ```sh
 
+kubectl -n lgtm get pods
 
-kubectl get pods -n loki
-
-
+NAME                                    READY   STATUS    RESTARTS   AGE
+curl-648df9bcbd-9g44w                   1/1     Running   0          9h
+grafana-6dbf6b5cc8-mn5g2                1/1     Running   0          9h
+loki-canary-8tzbt                       1/1     Running   0          3m20s
+loki-canary-bxfcq                       1/1     Running   0          3m20s
+loki-canary-lmksb                       1/1     Running   0          3m20s
+loki-chunks-cache-0                     2/2     Running   0          3m20s
+loki-compactor-0                        1/1     Running   0          3m20s
+loki-distributor-5847df65b8-g2q9v       1/1     Running   0          3m20s
+loki-distributor-5847df65b8-kcvfp       1/1     Running   0          3m20s
+loki-distributor-5847df65b8-khk44       1/1     Running   0          3m20s
+loki-gateway-5dfbfdc747-57tsj           1/1     Running   0          3m20s
+loki-index-gateway-0                    1/1     Running   0          3m19s
+loki-index-gateway-1                    1/1     Running   0          2m27s
+loki-ingester-zone-a-0                  1/1     Running   0          3m20s
+loki-ingester-zone-b-0                  1/1     Running   0          3m19s
+loki-ingester-zone-c-0                  1/1     Running   0          3m19s
+loki-minio-0                            1/1     Running   0          3m20s
+loki-querier-c449d4bc8-4vwnz            1/1     Running   0          3m20s
+loki-querier-c449d4bc8-qcd9f            1/1     Running   0          3m19s
+loki-querier-c449d4bc8-qlv7g            1/1     Running   0          3m19s
+loki-query-frontend-5b8c88bd79-999h6    1/1     Running   0          3m19s
+loki-query-frontend-5b8c88bd79-fxlrt    1/1     Running   0          3m20s
+loki-query-scheduler-5686d65bcc-j7kgf   1/1     Running   0          3m19s
+loki-query-scheduler-5686d65bcc-vpvc2   1/1     Running   0          3m20s
+loki-results-cache-0                    2/2     Running   0          3m20s
 
 
 ```
 
 
 
-Object storage config
+#### Object storage config
 
 ```sh
 
@@ -317,11 +348,67 @@ singleBinary:
 
 
 
+## 2) PromQL 설치
 
 
 
+## Install using Helm
 
-## 2) Grafana 설치
+
+
+### helm repo
+
+```bash
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+```
+
+
+
+Create the configuration file `values_promql.yaml`. 
+
+
+
+```yaml
+config:
+# publish data to loki
+  clients:
+    - url: http://loki-gateway/loki/api/v1/push
+      tenant_id: 1
+```
+
+
+
+Promtail deployed
+
+```bash
+
+# The default helm configuration deploys promtail as a daemonSet (recommended)
+helm -n lgtm install promtail grafana/promtail --values values_promql.yaml
+
+
+# 확인
+helm -n lgtm list
+
+helm -n lgtm list
+NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART           APP VERSION
+grafana         lgtm            1               2024-08-29 14:03:55.493480546 +0900 KST deployed        grafana-8.4.6   11.1.4
+loki            lgtm            1               2024-08-29 23:28:38.823732968 +0900 KST deployed        loki-6.10.0     3.1.1
+promtail        lgtm            1               2024-08-30 00:30:33.880967616 +0900 KST deployed        promtail-6.16.5 3.0.0
+
+
+# 삭제시...
+helm -n lgtm delete promtail
+
+
+
+```
+
+
+
+## 3) Grafana 설치
+
+### (1) Grafana 설치
 
 Grafana는 시각화 도구로, 다양한 데이터 소스를 연결할 수 있습니다. Grafana를 설치하려면 아래 명령어를 사용합니다.
 
@@ -386,7 +473,36 @@ $ helm -n lgtm delete grafana
 
 
 
-## 3) Tempo 설치
+### (2) Grafana 초기 암호 확인
+
+Grafana의 기본 관리자 암호를 확인하려면 아래 명령어를 사용하세요.
+
+```bash
+kubectl get secret --namespace default grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+```
+
+### (3) Grafana 대시보드 접속
+브라우저에서 `http://<External-IP>:<Port>`로 Grafana에 접속하고, `admin` 사용자와 위에서 확인한 비밀번호로 로그인합니다.
+
+
+
+### (9) trouble shooting
+
+
+
+```sh
+
+curl http://loki-gateway/loki/api/v1/query
+no org id                                                                                     │
+```
+
+이 에러 메시지는 Grafana가 Loki와 통신할 때 “no org id”라는 오류 메시지를 반환받아 발생한 것입니다. 이 문제는 보통 Loki의 멀티테넌시 설정 또는 Grafana와 Loki 간의 인증 문제에서 발생할 수 있다.
+
+
+
+
+
+# 3. Tempo 설치
 
 Tempo는 트레이싱 데이터를 수집하는 데 사용됩니다. Tempo를 설치하려면 다음 명령어를 실행합니다.
 
@@ -396,7 +512,11 @@ helm install tempo grafana/tempo
 
 
 
-## 4) Mimir 설치
+
+
+
+
+# 4. Mimir 설치
 
 Mimir는 메트릭을 수집하고 처리하는 솔루션입니다. Mimir를 설치하려면 아래 명령어를 사용합니다.
 
@@ -406,82 +526,5 @@ helm install mimir grafana/mimir
 
 
 
-## 5) 배포 상태 확인
-
-각각의 설치가 완료되면, 배포된 파드들이 정상적으로 실행 중인지 확인합니다.
-
-```bash
-kubectl get pods
-```
-
-여기서 각 파드가 정상 상태(`Running`)인지 확인하세요.
 
 
-
-
-
-
-
-
-
-# 3. Grafana 설정 및 접속
-
-## 1) Grafana 서비스 노출
-Grafana 대시보드에 접근하기 위해, NodePort 또는 LoadBalancer로 서비스를 노출합니다.
-
-```bash
-kubectl expose deployment grafana --type=NodePort --name=grafana-service
-```
-
-노출된 포트를 확인합니다.
-
-```bash
-kubectl get services grafana-service
-```
-
-## 2) Grafana 초기 암호 확인
-Grafana의 기본 관리자 암호를 확인하려면 아래 명령어를 사용하세요.
-
-```bash
-kubectl get secret --namespace default grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
-```
-
-## 3) Grafana 대시보드 접속
-브라우저에서 `http://<External-IP>:<Port>`로 Grafana에 접속하고, `admin` 사용자와 위에서 확인한 비밀번호로 로그인합니다.
-
-
-
-
-
-## 4) 데이터 소스 설정 및 대시보드 구성
-
-Grafana 대시보드에 접속한 후, 아래와 같이 각 데이터 소스를 설정합니다.
-
-1. **Loki**: 로그를 시각화하기 위해 Loki를 데이터 소스로 추가합니다.
-2. **Mimir**: 메트릭을 시각화하기 위해 Mimir를 데이터 소스로 추가합니다.
-3. **Tempo**: 트레이싱 데이터를 시각화하기 위해 Tempo를 데이터 소스로 추가합니다.
-
-이후, 각 데이터 소스를 바탕으로 대시보드를 구성하여 로그, 메트릭, 트레이싱 데이터를 모니터링할 수 있습니다.
-
-
-
-
-
-# 6. 간단한 테스트
-
-각 구성 요소가 정상적으로 동작하는지 확인하기 위해, 예시 애플리케이션을 배포하여 로그 및 메트릭 데이터를 수집하고, Grafana에서 시각화해 볼 수 있습니다.
-
-## 6.1 예시 애플리케이션 배포
-간단한 애플리케이션을 Kubernetes에 배포합니다.
-
-```bash
-kubectl run test-app --image=nginx --port=80
-kubectl expose deployment test-app --type=ClusterIP
-```
-
-## 6.2 데이터 수집 확인
-몇 분 후, Grafana 대시보드에서 Loki를 통해 로그를, Mimir를 통해 메트릭을, Tempo를 통해 트레이싱 데이터를 확인할 수 있습니다.
-
-### 마무리
-
-이제 LGTM 스택을 통해 Kubernetes 환경에서 통합 모니터링을 수행할 수 있습니다. Grafana 대시보드에서 다양한 데이터 소스를 추가하고 시각화를 구성하여 클러스터의 상태를 지속적으로 모니터링하세요.
