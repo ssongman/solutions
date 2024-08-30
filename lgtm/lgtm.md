@@ -348,7 +348,7 @@ singleBinary:
 
 
 
-## 2) PromQL 설치
+## 2) Promtail 설치
 
 
 
