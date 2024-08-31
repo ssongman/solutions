@@ -58,7 +58,7 @@ Loki는 로그 수집 시스템이다.
 
 
 
-### (1) Loki-stack
+### (1) Loki-stack(Monolithic방식)
 
 ```bash
 
@@ -110,7 +110,7 @@ $ helm -n lgtm delete loki
 
 
 
-### (2) Loki
+### (2) Loki(MSA방식)
 
 #### helm repo 준비
 
@@ -201,8 +201,6 @@ singleBinary:
 
 #### helm install
 
-
-
 ```sh
 
 
@@ -221,8 +219,122 @@ helm -n lgtm list
 # 삭제시...
 helm -n lgtm delete loki
 
+```
+
+
+
+
+
+### (3) helm upgrade 
+
+일부 내용추가시 아래와 같이 수정한다.
+
+
+
+#### values_v2.yaml
 
 ```
+loki:
+  schemaConfig:
+    configs:
+      - from: 2024-08-01
+        store: tsdb
+        object_store: s3
+        schema: v13
+        index:
+          prefix: loki_index_
+          period: 24h
+  ingester:
+    chunk_encoding: snappy
+  tracing:
+    enabled: true
+  querier:
+    # Default is 4, if you have enough memory and CPU you can increase, reduce if OOMing
+    max_concurrent: 4
+
+gateway:
+  ingress:
+    enabled: true
+    hosts:
+      - host: loki.lgtm.ssongman.com
+        paths:
+          - path: /
+            pathType: Prefix
+
+deploymentMode: Distributed
+
+ingester:
+  replicas: 3
+querier:
+  replicas: 3
+  maxUnavailable: 2
+queryFrontend:
+  replicas: 2
+  maxUnavailable: 1
+queryScheduler:
+  replicas: 2
+distributor:
+  replicas: 3
+  maxUnavailable: 2
+compactor:
+  replicas: 1
+indexGateway:
+  replicas: 2
+  maxUnavailable: 1
+
+bloomCompactor:
+  replicas: 0
+bloomGateway:
+  replicas: 0
+
+# Enable minio for storage
+minio:
+  enabled: true
+  ingress:
+    enabled: true
+    hosts
+      - minio.lgtm.ssongman.com
+  consoleIngress:
+    enabled: true
+    hosts
+      - minioconsole.lgtm.ssongman.com
+
+# Zero out replica counts of other deployment modes
+backend:
+  replicas: 0
+read:
+  replicas: 0
+write:
+  replicas: 0
+
+singleBinary:
+  replicas: 0 
+```
+
+
+
+
+
+#### helm update
+
+```sh
+
+# 참고 Upgrade 시...
+helm -n lgtm upgrade loki grafana/loki --values values_v2.yaml 
+
+
+
+# 확인
+helm -n lgtm list
+
+
+# 삭제시...
+helm -n lgtm delete loki
+
+
+```
+
+
 
 
 
@@ -352,11 +464,11 @@ singleBinary:
 
 
 
-## Install using Helm
+### Install using Helm
 
 
 
-### helm repo
+helm repo
 
 ```bash
 helm repo add grafana https://grafana.github.io/helm-charts
@@ -478,7 +590,8 @@ $ helm -n lgtm delete grafana
 Grafana의 기본 관리자 암호를 확인하려면 아래 명령어를 사용하세요.
 
 ```bash
-kubectl get secret --namespace default grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+kubectl -n lgtm get secret grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+
 ```
 
 ### (3) Grafana 대시보드 접속
@@ -493,7 +606,8 @@ kubectl get secret --namespace default grafana -o jsonpath="{.data.admin-passwor
 ```sh
 
 curl http://loki-gateway/loki/api/v1/query
-no org id                                                                                     │
+no org id
+
 ```
 
 이 에러 메시지는 Grafana가 Loki와 통신할 때 “no org id”라는 오류 메시지를 반환받아 발생한 것입니다. 이 문제는 보통 Loki의 멀티테넌시 설정 또는 Grafana와 Loki 간의 인증 문제에서 발생할 수 있다.
@@ -502,9 +616,90 @@ no org id                                                                       
 
 
 
+## 4) Grafana 설정
+
+
+
+### (1) Connection 추가
+
+* 메뉴 :  new Conection
+
+```sh
+
+loki 추가
+
+```
+
+
+
+### (2) Dashboard 추가
+
+* 메뉴 : Dashboard
+  * new > import
+  * 번호 : 13639
+
+
+
+
+## 5) Minio 확인
+
+**MinIO**는 고성능의 객체 스토리지 솔루션으로, Amazon S3 API와 호환되는 오픈 소스 소프트웨어이다. 이 솔루션은 클라우드 환경에서 대규모 데이터를 저장하고 관리하는 데 사용되며, 특히 고속 데이터 처리와 스케일링이 중요한 환경에서 활용된다.
+
+
+
+### (1) 접속방법
+
+
+
+* **MinIO Browser**: MinIO는 기본적으로 웹 기반 관리 인터페이스를 제공한다. MinIO 서버에 접속하면 웹 브라우저를 통해 데이터 버킷과 객체를 탐색하고 관리할 수 있다.
+
+* **접속 방법**: http://<minio-server-ip>:<minio-port>로 접속하여 MinIO에 로그인한 후, 웹 인터페이스에서 파일을 업로드, 다운로드, 삭제 및 탐색할 수 있다.
+
+
+
+#### User/pass 확인
+
+secret 을 통해서 확인한다.
+
+```sh
+
+$ kubectl -n lgtm get secret loki-minio -o jsonpath="{.data.rootUser}" | base64 --decode ; echo
+enterprise-logs
+
+$ kubectl -n lgtm get secret loki-minio -o jsonpath="{.data.rootPassword}" | base64 --decode ; echo
+supersecret
+
+
+# user/pass
+# enterprise-logs / supersecret
+
+```
+
+
+
+
+
+#### ingress
+
+* service
+
+```
+
+loki-minio.lgtm.svc:9000
+
+loki-minio-console.lgtm.svc:9001
+
+```
+
+
+
+
+
+
+
 # 3. Tempo 설치
 
-Tempo는 트레이싱 데이터를 수집하는 데 사용됩니다. Tempo를 설치하려면 다음 명령어를 실행합니다.
+Tempo는 트레이싱 데이터를 수집하는 데 사용됩니다. 
 
 ```bash
 helm install tempo grafana/tempo
@@ -518,7 +713,7 @@ helm install tempo grafana/tempo
 
 # 4. Mimir 설치
 
-Mimir는 메트릭을 수집하고 처리하는 솔루션입니다. Mimir를 설치하려면 아래 명령어를 사용합니다.
+Mimir는 메트릭을 수집하고 처리하는 솔루션이다. 
 
 ```bash
 helm install mimir grafana/mimir
