@@ -141,12 +141,6 @@ $ vi values.yaml
 
 
 
-
-
-
-
-
-
 ## 4) kube-prometheus-stack 설치
 
 
@@ -158,18 +152,14 @@ $ vi values.yaml
 $ kubectl create ns monitoring
 
 
-# 4.217.252.117 IP를 본인VM IP로 변경 필요
-
-
-
 # kube-prometheus-stack 설치
 
-$ helm -n lgtm install prometheus prometheus-community/kube-prometheus-stack \
+$ helm -n monitoring install prometheus prometheus-community/kube-prometheus-stack \
   --set alertmanager.enabled=false \
   --set grafana.ingress.enabled=true \
-  --set grafana.ingress.hosts[0]=grafana.lgtm.ssongman.com \
+  --set grafana.ingress.hosts[0]=grafana.20.214.193.216.nip.io \
   --set prometheus.ingress.enabled=true \
-  --set prometheus.ingress.hosts[0]=prometheus.lgtm.ssongman.com \
+  --set prometheus.ingress.hosts[0]=prometheus.20.214.193.216.nip.io \
   --dry-run=true
 
 
@@ -190,7 +180,7 @@ kube-prometheus-stack has been installed. Check its status by running:
 
 
 # 확인
-$ helm -n lgtm ls
+$ helm -n monitoring ls
 
 NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                          APP VERSION
 loki            lgtm            1               2024-08-29 23:28:38.823732968 +0900 KST deployed        loki-6.10.0        3.1.1
@@ -200,7 +190,7 @@ promtail        lgtm            1               2024-08-30 00:30:33.880967616 +0
 
 
 # 삭제시...
-$ helm -n lgtm delete prometheus
+$ helm -n monitoring delete prometheus
 
 
 ```
@@ -215,14 +205,14 @@ $ helm -n lgtm delete prometheus
 
 
 
-$ helm -n lgtm ls
-song@dio-bastion01:~/helm/charts/kube-prometheus-stack$ helm -n lgtm ls
+$ helm -n monitoring ls
+song@dio-bastion01:~/helm/charts/kube-prometheus-stack$ helm -n monitoring ls
 NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                           APP VERSION
 prometheus      monitoring      1               2024-07-05 01:32:41.73515446 +0000 UTC  deployed        kube-prometheus-stack-61.2.0    v0.75.0
 
 
 
-$ helm -n lgtm upgrade prometheus prometheus-community/prometheus \
+$ helm -n monitoring upgrade prometheus prometheus-community/prometheus \
   --set alertmanager.enabled=false \
   --set grafana.ingress.enabled=true \
   --set grafana.ingress.hosts[0]=grafana.diopro.duckdns.org \
@@ -280,7 +270,7 @@ https://prometheus.io/
 
 
 
-$ helm -n lgtm ls
+$ helm -n monitoring ls
 
 NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                   APP VERSION
 prometheus      monitoring      2               2024-07-05 05:37:41.398442516 +0000 UTC deployed        prometheus-25.22.0      v2.53.0
@@ -308,7 +298,7 @@ domain 확인
 
 ```sh
 # domain 확인
-$ kubectl get ingress -n lgtm
+$ kubectl get ingress -n monitoring
 NAME                                    CLASS     HOSTS                          ADDRESS                               PORTS     AGE
 loki-gateway                            traefik   loki.lgtm.ssongman.com         172.30.1.31,172.30.1.32,172.30.1.34   80, 443   16h
 prometheus-grafana                      traefik   grafana.lgtm.ssongman.com      172.30.1.31,172.30.1.32,172.30.1.34   80        2m42s
@@ -342,7 +332,7 @@ http://grafana.lgtm.ssongman.com/
 ```sh
 
 # Grafana password 확인
-$ kubectl get secret -n lgtm prometheus-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+$ kubectl get secret -n monitoring prometheus-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
 
 prom-operator
 
@@ -554,9 +544,9 @@ EOF
 ### clean up
 
 ```sh
-$ kubectl -n lgtm get Deployment
+$ kubectl -n monitoring get Deployment
 
-$ kubectl -n lgtm  delete Deployment event-exporter
+$ kubectl -n monitoring  delete Deployment event-exporter
 
 ```
 
@@ -917,7 +907,7 @@ https://github.com/resmoio/kubernetes-event-exporter
 
 
 # monitoring 이 hardcoding 되어 있음.
-$ kubectl -n lgtm apply -k https://github.com/resmoio/kubernetes-event-exporter.git
+$ kubectl -n monitoring apply -k https://github.com/resmoio/kubernetes-event-exporter.git
 
 serviceaccount/event-exporter created
 clusterrole.rbac.authorization.k8s.io/event-exporter created
@@ -928,7 +918,7 @@ deployment.apps/event-exporter created
 
 
 # 삭제시...
-$ kubectl -n lgtm delete -k https://github.com/resmoio/kubernetes-event-exporter.git
+$ kubectl -n monitoring delete -k https://github.com/resmoio/kubernetes-event-exporter.git
 
 
 
@@ -990,7 +980,7 @@ $ helm --namespace monitoring upgrade event-exporter bitnami/kubernetes-event-ex
 
 
 # 확인
-$ helm -n lgtm ls
+$ helm -n monitoring ls
 
 NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                           APP VERSION
 event-exporter  monitoring      1               2024-07-06 07:06:38.72388407 +0000 UTC  deployed        kubernetes-event-exporter-3.2.7 1.7.0
@@ -999,7 +989,7 @@ prometheus      monitoring      1               2024-07-05 10:50:55.593723208 +0
 
 
 # 삭제시...
-$ helm -n lgtm delete event-exporter
+$ helm -n monitoring delete event-exporter
 
 
 ```
