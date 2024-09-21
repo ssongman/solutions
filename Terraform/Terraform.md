@@ -840,7 +840,490 @@ terraform으로  edu용도의 VM을 대량 생성해 보자.
 
 
 
-## 1) VM 생성
+Terraform을 사용하여 Azure VM을 생성하고, 생성된 VM에 필요한 툴들을 설치하는 방법을 알아보자.
+
+
+
+## 1) 구성 설명
+
+
+
+
+
+### 1. **Resource Group, VNet, Subnet 생성**
+먼저, **Resource Group**, **Virtual Network**, **Subnet**을 생성. 이 작업은 Azure에서 VM을 실행할 네트워크 환경을 설정하는 단계.
+
+
+
+### 2. **Azure VM 생성 및 프로비저닝 스크립트 작성**
+VM을 생성하고, 생성된 VM에 **Docker**, **K9s**, **Helm**을 설치하는 스크립트를 추가.
+
+
+
+## 2) TF 파일 생성
+
+
+
+### (1) VM에 설치할 Tools 스크립트
+
+
+
+```sh
+
+$ cat > install_tools.sh
+---
+#!/bin/bash
+sudo apt-get update
+sudo apt-get install -y docker.io
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo snap install k9s
+curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+---
+
+
+
+
+sudo apt install vim -y
+sudo apt install tree
+sudo apt install iputils-ping
+sudo apt install net-tools
+sudo apt install netcat
+sudo apt install unzip
+sudo apt install git
+
+
+
+
+```
+
+
+
+
+
+### (2) VM 1개
+
+
+
+```sh
+$ cd song
+
+$ mkdir vmfortest
+  cd vmfortest
+
+```
+
+
+
+#### variable.tf
+
+```sh
+
+$ cat > variables.tf
+```
+
+```python
+# variables.tf
+variable "admin_username" {
+  description = "Admin username for the VM"
+  type        = string
+}
+
+variable "admin_password" {
+  description = "Admin password for the VM"
+  type        = string
+  sensitive   = true
+}
+
+```
+
+
+
+#### main.tf
+
+```sh
+
+$ cat > main.tf
+```
+
+
+
+```python
+provider "azurerm" {
+  features {}
+}
+
+# Resource Group 생성
+resource "azurerm_resource_group" "rg" {
+  name     = "yjedu-rg"
+  location = "koreacentral"
+}
+
+# Virtual Network 생성
+resource "azurerm_virtual_network" "vnet" {
+  name                = "eduVnet"
+  address_space       = ["10.0.0.0/16"]
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+# Subnet 생성
+resource "azurerm_subnet" "subnet" {
+  name                 = "eduSubnet"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = ["10.0.1.0/24"]
+}
+
+# Network Security Group
+resource "azurerm_network_security_group" "nsg" {
+  name                = "eduNSG"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+# NSG inbound rule(SSH port 22)
+resource "azurerm_network_security_rule" "ssh" {
+  name                        = "SSH"
+  priority                    = 1001
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "22"
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  network_security_group_name = azurerm_network_security_group.nsg.name
+  resource_group_name         = azurerm_resource_group.rg.name
+}
+
+
+# Network Interface
+resource "azurerm_network_interface" "nic" {
+  name                = "eduNIC"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  ip_configuration {
+    name                          = "eduNICConfiguration"
+    subnet_id                     = azurerm_subnet.subnet.id
+    private_ip_address_allocation = "Dynamic"
+    
+    # public IP Connect
+    public_ip_address_id = azurerm_public_ip.pip.id
+  }
+}
+
+
+# NSG NIC connect
+resource "azurerm_network_interface_security_group_association" "nic_nsg" {
+  network_interface_id      = azurerm_network_interface.nic.id
+  network_security_group_id = azurerm_network_security_group.nsg.id
+}
+
+
+# Public IP
+resource "azurerm_public_ip" "pip" {
+  name                = "eduPublicIP"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  allocation_method   = "Static"   # Static IP 할당으로 변경
+  sku                 = "Standard"
+}
+
+# VM
+resource "azurerm_virtual_machine" "vm" {
+  name                  = "eduVM"
+  location              = azurerm_resource_group.rg.location
+  resource_group_name   = azurerm_resource_group.rg.name
+  network_interface_ids = [azurerm_network_interface.nic.id]
+  vm_size               = "Standard_DS1_v2"
+
+  # Ubuntu Image 사용
+  storage_image_reference {
+    publisher = "Canonical"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts-gen2"
+    version   = "latest"
+  }
+
+  # OS 디스크 설정
+  storage_os_disk {
+    name              = "eduOSDisk"
+    caching           = "ReadWrite"
+    create_option     = "FromImage"
+    managed_disk_type = "Standard_LRS"
+  }
+
+  # 관리자 계정 설정
+  os_profile {
+    computer_name  = "eduVM"
+    admin_username = var.admin_username
+    admin_password = var.admin_password
+  }
+
+  # SSH 설정
+  os_profile_linux_config {
+    disable_password_authentication = false
+  }
+  
+  # upload file to VM
+  provisioner "file" {
+    source      = "install_tools.sh"
+    destination = "/tmp/install_tools.sh"
+
+    connection {
+      type     = "ssh"
+      user     = var.admin_username
+      password = var.admin_password
+      host     = azurerm_public_ip.pip[count.index].ip_address
+      port     = 22
+    }
+  }
+
+  # exec uploaded script
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x /tmp/install_tools.sh",
+      "sudo /tmp/install_tools.sh"
+    ]
+
+    connection {
+      type     = "ssh"
+      user     = var.admin_username
+      password = var.admin_password
+      host     = azurerm_public_ip.pip[count.index].ip_address
+      port     = 22
+    }
+  }
+
+  # 퍼블릭 IP
+  depends_on = [azurerm_public_ip.pip]
+}
+
+# Output: Public IP
+output "public_ip" {
+  value = azurerm_public_ip.pip.ip_address
+}
+```
+
+
+
+
+
+### (3) 대량 VM 생성
+
+
+
+```sh
+$ cd song
+
+$ mkdir multivmfortest
+  cd multivmfortest
+
+```
+
+
+
+
+
+#### variable.tf
+
+```sh
+$ cat > variables.tf
+```
+
+```python
+# variables.tf
+variable "admin_username" {
+  description = "Admin username for the VM"
+  type        = string
+}
+
+variable "admin_password" {
+  description = "Admin password for the VM"
+  type        = string
+  sensitive   = true
+}
+
+variable "vm_cnt" {
+  description = "Number of VMs to create"
+  type        = number
+  default     = 3
+}
+
+
+```
+
+
+
+#### main.tf
+
+```sh
+$ cat > main.tf
+```
+
+
+
+```python
+provider "azurerm" {
+  features {}
+}
+
+# Resource Group 생성
+resource "azurerm_resource_group" "rg" {
+  name     = "yjedu-rg"
+  location = "koreacentral"
+}
+
+# Virtual Network 생성
+resource "azurerm_virtual_network" "vnet" {
+  name                = "eduVnet"
+  address_space       = ["10.0.0.0/16"]
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+# Subnet 생성
+resource "azurerm_subnet" "subnet" {
+  name                 = "eduSubnet"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = ["10.0.1.0/24"]
+}
+
+# Network Security Group
+resource "azurerm_network_security_group" "nsg" {
+  name                = "eduNSG"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+# NSG inbound rule(SSH port 22)
+resource "azurerm_network_security_rule" "ssh" {
+  name                        = "SSH"
+  priority                    = 1001
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "22"
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  network_security_group_name = azurerm_network_security_group.nsg.name
+  resource_group_name         = azurerm_resource_group.rg.name
+}
+
+# Public IP (20 count create)
+resource "azurerm_public_ip" "pip" {
+  count               = var.vm_cnt
+  name                = format("eduPublicIP%02d", count.index + 1)
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  allocation_method   = "Static"
+  sku                 = "Standard"
+}
+
+# Network Interface (20 count create)
+resource "azurerm_network_interface" "nic" {
+  count               = var.vm_cnt
+  name                = format("eduNIC%02d", count.index + 1)
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  ip_configuration {
+    name                          = "eduNICConfiguration"
+    subnet_id                     = azurerm_subnet.subnet.id
+    private_ip_address_allocation = "Dynamic"
+    
+    # public IP Connect
+    public_ip_address_id = azurerm_public_ip.pip[count.index].id
+  }
+}
+
+# NSG NIC (20 count create)
+resource "azurerm_network_interface_security_group_association" "nic_nsg" {
+  count                  = var.vm_cnt
+  network_interface_id    = azurerm_network_interface.nic[count.index].id
+  network_security_group_id = azurerm_network_security_group.nsg.id
+}
+
+# VM (20 count create)
+resource "azurerm_virtual_machine" "vm" {
+  count                 = var.vm_cnt
+  name                  = format("eduVM%02d", count.index + 1)
+  location              = azurerm_resource_group.rg.location
+  resource_group_name   = azurerm_resource_group.rg.name
+  network_interface_ids = [azurerm_network_interface.nic[count.index].id]
+  vm_size               = "Standard_DS1_v2"
+
+  # Ubuntu Image 사용
+  storage_image_reference {
+    publisher = "Canonical"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts-gen2"
+    version   = "latest"
+  }
+
+  # OS 디스크 설정
+  storage_os_disk {
+    name              = format("eduOSDisk%02d", count.index + 1)
+    caching           = "ReadWrite"
+    create_option     = "FromImage"
+    managed_disk_type = "Standard_LRS"
+  }
+
+  # 관리자 계정 설정
+  os_profile {
+    computer_name  = format("eduVM%02d", count.index + 1)
+    admin_username = var.admin_username
+    admin_password = var.admin_password
+  }
+
+  # SSH 설정
+  os_profile_linux_config {
+    disable_password_authentication = false
+  }
+  
+  # upload file to VM
+  provisioner "file" {
+    source      = "install_tools.sh"
+    destination = "/tmp/install_tools.sh"
+
+    connection {
+      type     = "ssh"
+      user     = var.admin_username
+      password = var.admin_password
+      host     = azurerm_public_ip.pip[count.index].ip_address
+      port     = 22
+    }
+  }
+
+  # exec uploaded script
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x /tmp/install_tools.sh",
+      "sudo /tmp/install_tools.sh"
+    ]
+
+    connection {
+      type     = "ssh"
+      user     = var.admin_username
+      password = var.admin_password
+      host     = azurerm_public_ip.pip[count.index].ip_address
+      port     = 22
+    }
+  }
+
+  # 퍼블릭 IP 의존성
+  depends_on = [azurerm_public_ip.pip]
+}
+
+# Output: Public IP 목록 출력
+output "public_ip_addresses" {
+  value = azurerm_public_ip.pip[*].ip_address
+}
+```
 
 
 
@@ -848,16 +1331,60 @@ terraform으로  edu용도의 VM을 대량 생성해 보자.
 
 
 
-## 2) VM 10 개 생성
 
 
 
-아래 조건을 충족
 
-- 동일한 vnet, subnet
 
-- vm이름은 yjvm01 ~ 10
-- 
+
+## 3) **Terraform 단계별 실행**
+
+
+
+### (1) azure env 설정
+
+```sh
+
+export ARM_CLIENT_ID="<APPID_VALUE>"
+export ARM_CLIENT_SECRET="<PASSWORD_VALUE>"
+export ARM_SUBSCRIPTION_ID="<SUBSCRIPTION_ID>"
+export ARM_TENANT_ID="<TENANT_VALUE>"
+
+export TF_VAR_admin_username="adminuser"
+export TF_VAR_admin_password="P@ssw0rd123!"
+
+```
+
+
+
+### (2) 실행
+
+```bash
+
+terraform init
+
+terraform plan
+
+terraform apply 
+
+terraform show
+
+```
+
+
+
+### (3) trouble shooting
+
+```sh
+
+# 유효한 image 목록 확인
+$ az vm image list --output table
+
+```
+
+
+
+
 
 
 
