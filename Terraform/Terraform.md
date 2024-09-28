@@ -943,8 +943,6 @@ curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bas
 ---
 
 
-
-
 sudo apt install vim -y
 sudo apt install tree
 sudo apt install iputils-ping
@@ -953,18 +951,38 @@ sudo apt install netcat
 sudo apt install unzip
 sudo apt install git
 
+```
 
 
+
+```sh
+# upadte
+sudo apt-get update
+
+# Docker
+sudo apt-get install -y apt-transport-https ca-certificates curl gnupg-agent software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository -y "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+sudo systemctl status docker
+sudo usermod -aG docker edu
+sudo service docker restart
+
+# etc
+sudo apt install vim -y
+sudo apt install tree
+sudo apt install iputils-ping
+sudo apt install net-tools
+sudo apt install netcat
+sudo apt install unzip
+sudo apt install git
+curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 
 ```
 
 
 
-
-
 ### (2) VM 1개
-
-
 
 ```sh
 
