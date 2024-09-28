@@ -141,20 +141,42 @@ sudo tee /etc/apt/sources.list.d/hashicorp.list
 $ sudo apt-get update
 $ sudo apt-get install terraform
 
-
 # Terraform 설치 확인
 $ terraform -v
 Terraform v1.9.6
 on linux_amd64
 
-
 ```
 
 
 
+#### mac
+
+```sh
+
+$ brew tap hashicorp/tap
+  brew install hashicorp/tap/terraform
+
+$ terraform -v
+Terraform v1.9.6
+on darwin_arm64
 
 
 
+
+## [참고] brew 관리
+
+# 1) homebrew 캐시정리
+brew cleanup
+brew update
+
+# 2) 재설치
+brew uninstall terraform
+
+# 3) 설치된 Terraform 버전 확인
+terraform -v
+
+```
 
 
 
@@ -168,6 +190,8 @@ terraform 으로  nignx container 를 배포하는 것을 수행해보자.
 ### (1) tf 파일 생성
 
 ```sh
+
+$ cd ~/song/terraform/install
 
 $ mkdir learn-terraform-docker-container
   cd learn-terraform-docker-container
@@ -245,12 +269,21 @@ curl http://localhost:8000/
 $ terraform show
 
 
-# 리소스 상태 확인
-$ terraform show
+```
 
 
+
+### (4) Clean up
+
+```sh
+# 리소스 삭제
+$ terraform destroy
 
 ```
+
+
+
+
 
 
 
@@ -285,9 +318,16 @@ $ az login
 
 ```sh
 
+# subscriptions 확인
+$ az account list -o table
+Name         CloudName    SubscriptionId                        TenantId                              State    IsDefault
+-----------  -----------  ------------------------------------  ------------------------------------  -------  -----------
+axcoe        AzureCloud   1d6c45e0-bd9f-4771-bb67-36616452f239  a3870566-f011-4691-aa51-5b988c51c03a  Enabled  False
+
 Subscription_ID="1d6c45e0-bd9f-4771-bb67-36616452f239"
 
 
+# SP 생성
 $ az ad sp create-for-rbac \
     --role="Contributor" \
     --scopes="/subscriptions/1d6c45e0-bd9f-4771-bb67-36616452f239"
@@ -296,11 +336,28 @@ $ az ad sp create-for-rbac \
 Creating 'Contributor' role assignment under scope '/subscriptions/1d6c45e0-bd9f-4771-bb67-36616452f239'
 The output includes credentials that you must protect. Be sure that you do not include these credentials in your code or check the credentials into your source control. For more information, see https://aka.ms/azadsp-cli
 {
+  "id": "22027e34-d6c2-49bb-8e2a-78a965b338a6",
   "appId": "....",
   "displayName": "azure-cli-2024-09-21-08-19-38",
   "password": "....",
   "tenant": "...."
 }
+# password 는 최초 한번만 식별 가능
+
+
+# 확인
+$ az ad sp show --id 22027e34-d6c2-49bb-8e2a-78a965b338a6
+  
+$ az ad sp list -o table
+$ az ad sp list --display-name azure-cli-2024-09-21-08-19-38 
+$ az ad sp list --display-name azure-cli-2024-09-21-08-19-38 -o table
+
+
+
+
+# 삭제
+$ az ad sp delete --id 22027e34-d6c2-49bb-8e2a-78a965b338a6
+
 
 
 ```
@@ -870,6 +927,10 @@ VM을 생성하고, 생성된 VM에 **Docker**, **K9s**, **Helm**을 설치하�
 
 ```sh
 
+$ mkdir -p ~/song/terraform/eduVM
+  cd ~/song/terraform/eduVM
+
+
 $ cat > install_tools.sh
 ---
 #!/bin/bash
@@ -906,10 +967,9 @@ sudo apt install git
 
 
 ```sh
-$ cd song
 
-$ mkdir vmfortest
-  cd vmfortest
+$ mkdir -p ~/song/terraform/eduVM/vmfortest
+  cd ~/song/terraform/eduVM/vmfortest
 
 ```
 
@@ -1069,14 +1129,14 @@ resource "azurerm_virtual_machine" "vm" {
   
   # upload file to VM
   provisioner "file" {
-    source      = "install_tools.sh"
+    source      = "../install_tools.sh"
     destination = "/tmp/install_tools.sh"
 
     connection {
       type     = "ssh"
       user     = var.admin_username
       password = var.admin_password
-      host     = azurerm_public_ip.pip[count.index].ip_address
+      host     = azurerm_public_ip.pip.ip_address
       port     = 22
     }
   }
@@ -1092,7 +1152,7 @@ resource "azurerm_virtual_machine" "vm" {
       type     = "ssh"
       user     = var.admin_username
       password = var.admin_password
-      host     = azurerm_public_ip.pip[count.index].ip_address
+      host     = azurerm_public_ip.pip.ip_address
       port     = 22
     }
   }
@@ -1116,10 +1176,9 @@ output "public_ip" {
 
 
 ```sh
-$ cd song
 
-$ mkdir multivmfortest
-  cd multivmfortest
+$ mkdir -p ~/song/terraform/eduVM/multivmfortest
+  cd ~/song/terraform/eduVM/multivmfortest
 
 ```
 
@@ -1287,7 +1346,7 @@ resource "azurerm_virtual_machine" "vm" {
   
   # upload file to VM
   provisioner "file" {
-    source      = "install_tools.sh"
+    source      = "../install_tools.sh"
     destination = "/tmp/install_tools.sh"
 
     connection {
@@ -1329,14 +1388,6 @@ output "public_ip_addresses" {
 
 
 
-
-
-
-
-
-
-
-
 ## 3) **Terraform 단계별 실행**
 
 
@@ -1350,8 +1401,8 @@ export ARM_CLIENT_SECRET="<PASSWORD_VALUE>"
 export ARM_SUBSCRIPTION_ID="<SUBSCRIPTION_ID>"
 export ARM_TENANT_ID="<TENANT_VALUE>"
 
-export TF_VAR_admin_username="adminuser"
-export TF_VAR_admin_password="P@ssw0rd123!"
+export TF_VAR_admin_username="<vm_admin_username>"
+export TF_VAR_admin_password="<vm_admin_password>"
 
 ```
 
@@ -1363,9 +1414,12 @@ export TF_VAR_admin_password="P@ssw0rd123!"
 
 terraform init
 
+terraform validate
+
 terraform plan
 
-terraform apply 
+terraform apply
+ 
 
 terraform show
 
