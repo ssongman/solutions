@@ -375,12 +375,11 @@ export ARM_CLIENT_SECRET="<PASSWORD_VALUE>"
 export ARM_SUBSCRIPTION_ID="<SUBSCRIPTION_ID>"
 export ARM_TENANT_ID="<TENANT_VALUE>"
 
-
 ```
 
 
 
-### (4) Resource Group 생성
+### (4) Terraform 실행(RG 생성)
 
 #### 1. tf 파일 생성
 
@@ -431,10 +430,6 @@ $ terraform fmt
 $ terraform validate
 
 ```
-
-
-
-
 
 
 
@@ -679,6 +674,223 @@ $ terraform show
 
 ```sh
 
+# 리소스 삭제
+$ terraform destroy
+
+```
+
+
+
+
+
+## 2) Blob Storage 생성
+
+
+
+### (1) Service Principal 생성
+
+생략,  이전 생성정보 참고할것
+
+
+
+SP 에 Owner 권한 추가
+
+```sh
+
+$ az role assignment create \
+  --assignee <Service Principal ID> \
+  --role "Owner" \
+  --scope /subscriptions/<Subscription ID>/resourceGroups/<Resource Group Name>
+
+
+$ az role assignment create \
+  --assignee fec8b8ed-8c4d-4931-a8be-4f39257c21db \
+  --role "Owner" \
+  --scope /subscriptions/1d6c45e0-bd9f-4771-bb67-36616452f239/resourceGroups/yjedu-rg
+  
+```
+
+
+
+
+
+
+
+### (2) TF파일 작성
+
+
+
+```sh
+$ mkdir -p ~/song/terraform/blobstorage
+  cd ~/song/terraform/blobstorage
+
+```
+
+
+
+#### variable.tf
+
+```sh
+$ cat > variables.tf
+```
+
+```python
+# variables.tf
+variable "resource_group_location" {
+  description = "resource group location"
+  type        = string
+}
+
+variable "storage_resource_group_name" {
+  description = "storage resource group name"
+  type        = string
+}
+
+variable "client_id" {
+  type        = string
+  description = "Client ID of the Service Principal"
+}
+
+```
+
+
+
+
+
+#### main.tf 
+
+```sh
+
+$ cat > main.tf
+```
+
+
+
+```python
+# Configure the Azure provider
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 3.0.2"
+    }
+  }
+
+  required_version = ">= 1.1.0"
+}
+
+provider "azurerm" {
+  features {}
+}
+
+resource "azurerm_storage_account" "songvmarti" {
+  name                     = "songvmarti"
+  location                 = "koreacentral"
+  resource_group_name      = var.storage_resource_group_name
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+
+  blob_properties {
+    versioning_enabled = "true"
+  }
+}
+
+resource "azurerm_storage_container" "song-vm-arti-con" {
+  name                  = "song-vm-arti-con"
+  storage_account_name  = azurerm_storage_account.songvmarti.name
+  container_access_type = "blob"
+}
+
+
+# 
+resource "azurerm_role_assignment" "entra_app_role_assignment_for_admin" {
+  scope                = azurerm_storage_account.songvmarti.id
+  role_definition_name = "Storage Blob Data Owner"
+  principal_id         = var.client_id
+  depends_on           = [azurerm_storage_account.songvmarti]
+}
+
+```
+
+
+
+```sh
+# format
+$ terraform fmt
+
+```
+
+
+
+
+
+### (3) TF 수행
+
+
+
+#### azure env 설정
+
+```sh
+export ARM_CLIENT_ID="<APPID_VALUE>"
+export ARM_CLIENT_SECRET="<PASSWORD_VALUE>"
+export ARM_SUBSCRIPTION_ID="<SUBSCRIPTION_ID>"
+export ARM_TENANT_ID="<TENANT_VALUE>"
+
+export TF_VAR_resource_group_location="koreacentral"
+export TF_VAR_storage_resource_group_name="yjedu-rg"
+export TF_VAR_client_id=$ARM_CLIENT_ID
+
+```
+
+
+
+
+
+#### init,plan,apply,show
+
+```sh
+# provider plugin 설치
+$ terraform init
+
+
+# tf 파일 검증
+$ terraform validate
+
+
+# plan
+# 적용전 필요한 인프라 변경사항 확인
+$ terraform plan
+
+
+# 수행
+$ terraform apply
+
+
+# 확인1
+$ terraform state list
+azurerm_resource_group.rg
+
+
+
+# show, inspect, apply 된 리소스 상태 확인
+$ terraform show
+```
+
+
+
+### (4) show, destroy
+
+```sh
+# apply 된 리소스 상태 확인
+$ terraform show
+
+```
+
+
+
+### (5) Clean up
+
+```sh
 # 리소스 삭제
 $ terraform destroy
 
