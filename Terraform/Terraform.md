@@ -180,144 +180,21 @@ terraform -v
 
 
 
-## 2) 첫 provisioning(Nginx)
-
-terraform 으로  nignx container 를 배포하는 것을 수행해보자.
-사전에 docker 가 설치되어 있어야 한다.
 
 
+# 3. Service Principal 설정
 
-### (1) tf 파일 생성
-
-```sh
-
-$ cd ~/song/terraform/install
-
-$ mkdir learn-terraform-docker-container
-  cd learn-terraform-docker-container
-
-$ cat > main.tf
-
-```
+먼저, Azure 환경에 접근하려면 해당 구독에 대한 Service Principal을 생성해야 한다. Azure CLI를 사용하여 쉽게 생성할 수 있다.
 
 
 
-```python
-terraform {
-  required_providers {
-    docker = {
-      source  = "kreuzwerker/docker"
-      version = "~> 3.0.1"
-    }
-  }
-}
-
-provider "docker" {}
-
-resource "docker_image" "nginx" {
-  name         = "nginx"
-  keep_locally = false
-}
-
-resource "docker_container" "nginx" {
-  image = docker_image.nginx.image_id
-  name  = "tutorial"
-
-  ports {
-    internal = 80
-    external = 8000
-  }
-}
-```
+## 1) SP 생성
 
 
 
-### (2) init,plan,apply
+### (1) Service Principal 생성
 
 ```sh
-
-# provider plugin 설치
-$ terraform init
-
-
-
-# plan
-# 적용전 필요한 인프라 변경사항 확인
-$ terraform plan
-
-
-# 수행
-$ terraform apply
-
-
-
-# nginx 확인
-curl http://localhost:8000/
-
-
-```
-
-
-
-
-
-### (3) show, destroy
-
-```sh
-
-# apply 된 리소스 상태 확인
-$ terraform show
-
-
-```
-
-
-
-### (4) Clean up
-
-```sh
-# 리소스 삭제
-$ terraform destroy
-
-```
-
-
-
-
-
-
-
-
-
-# 4. Sample
-
-
-
-## 1) Azure 명령수행
-
-Terraform 명령으로 Azure 내의 RG를 생성해보자.
-
-Azure Cli 가 설치되어 있어야 한다.
-
-
-
-### (1) azure CLI 설치
-
-```sh
-
-$ curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-
-
-$ az login
-
-```
-
-
-
-### (2) Service Principal 생성
-
-```sh
-
 # subscriptions 확인
 $ az account list -o table
 Name         CloudName    SubscriptionId                        TenantId                              State    IsDefault
@@ -369,7 +246,6 @@ $ az ad sp delete --id 22027e34-d6c2-49bb-8e2a-78a965b338a6
 ### (3) 환경변수 설정
 
 ```sh
-
 export ARM_CLIENT_ID="<APPID_VALUE>"
 export ARM_CLIENT_SECRET="<PASSWORD_VALUE>"
 export ARM_SUBSCRIPTION_ID="<SUBSCRIPTION_ID>"
@@ -379,7 +255,140 @@ export ARM_TENANT_ID="<TENANT_VALUE>"
 
 
 
-### (4) Terraform 실행(RG 생성)
+
+
+# 4. Sample
+
+
+
+
+
+## 1) 첫 provisioning(Nginx)
+
+terraform 으로  nignx container 를 배포하는 것을 수행해보자.
+사전에 docker 가 설치되어 있어야 한다.
+
+
+
+### (1) tf 파일 생성
+
+```sh
+$ cd ~/song/terraform/install
+
+$ mkdir learn-terraform-docker-container
+  cd learn-terraform-docker-container
+
+$ cat > main.tf
+
+```
+
+
+
+```python
+terraform {
+  required_providers {
+    docker = {
+      source  = "kreuzwerker/docker"
+      version = "~> 3.0.1"
+    }
+  }
+}
+
+provider "docker" {}
+
+resource "docker_image" "nginx" {
+  name         = "nginx"
+  keep_locally = false
+}
+
+resource "docker_container" "nginx" {
+  image = docker_image.nginx.image_id
+  name  = "tutorial"
+
+  ports {
+    internal = 80
+    external = 8000
+  }
+}
+```
+
+
+
+### (2) init,plan,apply
+
+```sh
+# provider plugin 설치
+$ terraform init
+
+
+
+# plan
+# 적용전 필요한 인프라 변경사항 확인
+$ terraform plan
+
+
+# 수행
+$ terraform apply
+
+
+
+# nginx 확인
+curl http://localhost:8000/
+
+
+```
+
+
+
+
+
+### (3) show, destroy
+
+```sh
+# apply 된 리소스 상태 확인
+$ terraform show
+
+
+```
+
+
+
+### (4) Clean up
+
+```sh
+# 리소스 삭제
+$ terraform destroy
+
+```
+
+
+
+
+
+
+
+## 2) Azure 명령수행
+
+Terraform 명령으로 Azure 내의 RG를 생성해보자.
+
+Azure Cli 가 설치되어 있어야 한다.
+
+
+
+### (1) azure CLI 설치
+
+```sh
+
+$ curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+
+$ az login
+
+```
+
+
+
+### (2) Terraform 실행(RG 생성)
 
 #### 1. tf 파일 생성
 
