@@ -206,6 +206,7 @@ Subscription_ID="1d6c45e0-bd9f-4771-bb67-36616452f239"
 
 # SP 생성
 $ az ad sp create-for-rbac \
+    -n yjApp \
     --role="Contributor" \
     --scopes="/subscriptions/1d6c45e0-bd9f-4771-bb67-36616452f239"
 
@@ -218,6 +219,12 @@ The output includes credentials that you must protect. Be sure that you do not i
   "displayName": "azure-cli-2024-09-21-08-19-38",
   "password": "....",
   "tenant": "...."
+}
+{
+  "appId": "37b7bc6f-b65f-4435-a9ba-37c580f19fca",
+  "displayName": "yjApp",
+  "password": "yap8Q~41~...",
+  "tenant": "a3870566-f011-4691-aa51-5b988c51c03a"
 }
 # password 는 최초 한번만 식별 가능
 
@@ -234,6 +241,7 @@ $ az ad sp list --display-name azure-cli-2024-09-21-08-19-38 -o table
 
 # 삭제
 $ az ad sp delete --id 22027e34-d6c2-49bb-8e2a-78a965b338a6
+$ az ad sp delete --id 37b7bc6f-b65f-4435-a9ba-37c580f19fca
 
 
 
@@ -1254,7 +1262,7 @@ provider "azurerm" {
 
 # Resource Group 생성
 resource "azurerm_resource_group" "rg" {
-  name     = "yjedu-rg"
+  name     = "yj-rg"
   location = "koreacentral"
 }
 
@@ -1470,13 +1478,13 @@ provider "azurerm" {
 
 # Resource Group 생성
 resource "azurerm_resource_group" "rg" {
-  name     = "yjedu-rg"
+  name     = "yj-rg"
   location = "koreacentral"
 }
 
 # Virtual Network 생성
 resource "azurerm_virtual_network" "vnet" {
-  name                = "eduVnet"
+  name                = "yjVnet"
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
@@ -1484,7 +1492,7 @@ resource "azurerm_virtual_network" "vnet" {
 
 # Subnet 생성
 resource "azurerm_subnet" "subnet" {
-  name                 = "eduSubnet"
+  name                 = "yjSubnet"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
@@ -1492,7 +1500,7 @@ resource "azurerm_subnet" "subnet" {
 
 # Network Security Group
 resource "azurerm_network_security_group" "nsg" {
-  name                = "eduNSG"
+  name                = "yjNSG"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 }
@@ -1515,7 +1523,7 @@ resource "azurerm_network_security_rule" "ssh" {
 # Public IP (20 count create)
 resource "azurerm_public_ip" "pip" {
   count               = var.vm_cnt
-  name                = format("eduPublicIP%02d", count.index + 1)
+  name                = format("yjPublicIP%02d", count.index + 1)
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
@@ -1525,12 +1533,12 @@ resource "azurerm_public_ip" "pip" {
 # Network Interface (20 count create)
 resource "azurerm_network_interface" "nic" {
   count               = var.vm_cnt
-  name                = format("eduNIC%02d", count.index + 1)
+  name                = format("yjNIC%02d", count.index + 1)
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
   ip_configuration {
-    name                          = "eduNICConfiguration"
+    name                          = "yjNICConfiguration"
     subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
     
@@ -1549,7 +1557,7 @@ resource "azurerm_network_interface_security_group_association" "nic_nsg" {
 # VM (20 count create)
 resource "azurerm_virtual_machine" "vm" {
   count                 = var.vm_cnt
-  name                  = format("eduVM%02d", count.index + 1)
+  name                  = format("yjVM%02d", count.index + 1)
   location              = azurerm_resource_group.rg.location
   resource_group_name   = azurerm_resource_group.rg.name
   network_interface_ids = [azurerm_network_interface.nic[count.index].id]
@@ -1565,7 +1573,7 @@ resource "azurerm_virtual_machine" "vm" {
 
   # OS 디스크 설정
   storage_os_disk {
-    name              = format("eduOSDisk%02d", count.index + 1)
+    name              = format("yjOSDisk%02d", count.index + 1)
     caching           = "ReadWrite"
     create_option     = "FromImage"
     managed_disk_type = "Standard_LRS"
@@ -1573,7 +1581,7 @@ resource "azurerm_virtual_machine" "vm" {
 
   # 관리자 계정 설정
   os_profile {
-    computer_name  = format("eduVM%02d", count.index + 1)
+    computer_name  = format("yjVM%02d", count.index + 1)
     admin_username = var.admin_username
     admin_password = var.admin_password
   }
@@ -1642,6 +1650,17 @@ export ARM_TENANT_ID="<TENANT_VALUE>"
 
 export TF_VAR_admin_username="<vm_admin_username>"
 export TF_VAR_admin_password="<vm_admin_password>"
+
+===============================
+
+# 20241020
+export ARM_CLIENT_ID="37b7bc6f-..."
+export ARM_CLIENT_SECRET="yap8Q~41~..."
+export ARM_SUBSCRIPTION_ID="1d6c45e0-..."
+export ARM_TENANT_ID="a3870566-..."
+
+export TF_VAR_admin_username="song"
+export TF_VAR_admin_password="Songpass123!"
 
 ```
 
