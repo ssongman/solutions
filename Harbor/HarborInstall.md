@@ -93,7 +93,7 @@ $ helm -n harbor install harbor . \
     --set externalURL=https://harbor-core.ssongman.duckdns.org \
     --set service.type=ClusterIP \
     --set ingress.core.ingressClassName=traefik \
-    --set ingress.core.hostname=harbor.ssongman.duckdns.org \
+    --set ingress.core.hostname=harbor.ssongman.com \
     --set ingress.core.tls=true \
     --set persistence.enabled=false \
     --set nginx.replicaCount=1 \
@@ -207,7 +207,7 @@ $ helm -n harbor upgrade --install harbor . \
     --set externalURL=https://harbor-core.ssongman.duckdns.org \
     --set service.type=ClusterIP \
     --set ingress.core.ingressClassName=traefik \
-    --set ingress.core.hostname=harbor.ssongman.duckdns.org \
+    --set ingress.core.hostname=harbor.ssongman.com \
     --set persistence.enabled=false \
     --set nginx.replicaCount=1 \
     --set portal.replicaCount=1 \
@@ -303,6 +303,12 @@ NAME            CHART VERSION   APP VERSION     DESCRIPTION
 bitnami/harbor  20.1.2          2.10.0          Harbor is an open source trusted cloud-native r...
 harbor/harbor   1.14.0          2.10.0          An open source trusted cloud native registry th...
 
+# 2025.01.05
+NAME            CHART VERSION   APP VERSION     DESCRIPTION
+bitnami/harbor  23.0.2          2.11.1          Harbor is an open source trusted cloud-native r...
+harbor/harbor   1.15.1          2.11.1          An open source trusted cloud native registry th...
+
+
 
 $ helm fetch harbor/harbor
 
@@ -314,15 +320,15 @@ $ tar -xzvf harbor-1.14.0.tgz
 $ cd ~/song/helm/charts/harbor
 
 
-$ helm -n harbor install harbor . \
+$ helm -n harbor upgrade --install harbor harbor/harbor \
     --set expose.type=ingress \
     --set expose.tls.enabled=true \
-    --set expose.ingress.hosts.core=harbor.ssongman.duckdns.org \
+    --set expose.ingress.hosts.core=harbor.ssongman.com \
     --set expose.ingress.className=traefik \
-    --set externalURL=https://harbor.ssongman.duckdns.org \
+    --set externalURL=https://harbor.ssongman.com \
     --set persistence.enabled=false \
-    --set harborAdminPassword=adminpass \
-    --dry-run=true
+    --set harborAdminPassword=adminpass
+    
 
 
 ############################################################
@@ -365,13 +371,45 @@ Password: adminpass
 
 $ helm -n harbor ls
 NAME    NAMESPACE       REVISION        UPDATED                                 STATUS          CHART           APP VERSION
-harbor  harbor          1               2024-03-17 23:17:27.369035119 +0900 KST deployed        harbor-20.1.2   2.10.0
-
+harbor  harbor          1               2024-03-17 23:17:27.369035119 +0900 KST deployed        harbor-20.1.2   2.10.0                               STATUS          CHART           APP VERSION
+harbor  harbor          1               2024-03-18 14:31:47.041164438 +0900 KST deployed        harbor-1.14.0   2.10.0
 
 # 삭제시...
 $ helm -n harbor delete harbor
 
 $ helm -n harbor uninstall harbor
+
+
+
+```
+
+
+
+
+
+```sh
+
+# history
+$ helm -n harbor history harbor
+REVISION        UPDATED                         STATUS          CHART           APP VERSION     DESCRIPTION
+1               Mon Mar 18 14:31:47 2024        deployed        harbor-1.14.0   2.10.0          Install complete
+
+
+$ helm -n harbor get values harbor
+
+USER-SUPPLIED VALUES:
+expose:
+  ingress:
+    className: traefik
+    hosts:
+      core: harbor.ssongman.com
+  tls:
+    enabled: true
+  type: ingress
+externalURL: https://harbor.ssongman.com
+harborAdminPassword: adminpass
+persistence:
+  enabled: false
 
 
 
@@ -424,7 +462,7 @@ $ openssl genrsa -out ca.key 4096
 # Root CA의 비밀키와 짝을 이룰 공개키 생성
 # * CN은 도메인이나 아이피 입력
 $ openssl req -x509 -new -nodes -sha512 -days 3650 \
-    -subj "/C=CN/ST=seoul/L=seoul/O=kyh0703/OU=tester/CN=harbor.ssongman.duckdns.org" \
+    -subj "/C=CN/ST=seoul/L=seoul/O=kyh0703/OU=tester/CN=harbor.ssongman.com" \
     -key ca.key \
     -out ca.crt
 ```
@@ -435,12 +473,12 @@ $ openssl req -x509 -new -nodes -sha512 -days 3650 \
 
 ```sh
 # Server의 비밀키 생성
-$ openssl genrsa -out harbor.ssongman.duckdns.org.key 4096
+$ openssl genrsa -out harbor.ssongman.com.key 4096
 
 # Server의 CSR 파일 생성
 # * CN은 도메인이나 아이피 입력
 $ openssl req -sha512 -new \
-    -subj "/C=CN/ST=seoul/L=seoul/O=kyh0703/OU=tester/CN=harbor.ssongman.duckdns.org" \
+    -subj "/C=CN/ST=seoul/L=seoul/O=kyh0703/OU=tester/CN=harbor.ssongman.com" \
     -key 100.100.103.167.key \
     -out 100.100.103.167.csr
 ```
@@ -570,7 +608,7 @@ harbor_registry_password
 
 
 * 접속 url
-  * https://harbor.ssongman.duckdns.org/
+  * https://harbor.ssongman.com
 * ID/Pass
   * admin / adminpass
 
@@ -647,9 +685,9 @@ bastion 에서 pull / push 해 보자.
 ### (1) login 
 
 ```sh
-$ docker logout https://harbor.ssongman.duckdns.org
+$ docker logout https://harbor.ssongman.com
 
-$ docker login https://harbor.ssongman.duckdns.org
+$ docker login https://harbor.ssongman.com
 Username: admin
 Password: 
 WARNING! Your password will be stored unencrypted in /home/song/.docker/config.json.
@@ -675,10 +713,10 @@ Login Succeeded
 아래와 같이 insecure-registres 에 등록해 줘야 한다.
 
 ```sh
-$ docker login harbor.ssongman.duckdns.org
+$ docker login harbor.ssongman.com
 Username: admin
 Password: 
-Error response from daemon: Get "https://harbor.ssongman.duckdns.org/v2/": tls: failed to verify certificate: x509: certificate signed by unknown authority
+Error response from daemon: Get "https://harbor.ssongman.com/v2/": tls: failed to verify certificate: x509: certificate signed by unknown authority
 
 
 # error 내용
@@ -702,7 +740,7 @@ $ sudo vi /etc/docker/daemon.json
   "insecure-registries": [                             # <-- 추가
     "nexus-repo.ssongman.duckdns.org:80",
     "nexus-repo.ssongman.duckdns.org",
-    "harbor.ssongman.duckdns.org"
+    "harbor.ssongman.com"
   ]
 
 }
@@ -715,7 +753,7 @@ $ sudo vi /etc/docker/daemon.json
 
 ```sh
 # flush changes
-$ sudo systemctl daemon-reload
+$
 
 # restart docker
 $ sudo systemctl restart docker
@@ -802,10 +840,10 @@ enWIlpIQ4mRSnbaxl3mrwqPA6/HjfJiS
 $ docker pull ssongman/userlist:v1
 $ docker pull nginx
 
-$ docker tag ssongman/userlist:v1 harbor.ssongman.duckdns.org/app/userlist:v1
-$ docker tag ssongman/userlist:v1 harbor.ssongman.duckdns.org/app/userlist:v1.0.1
+$ docker tag ssongman/userlist:v1 harbor.ssongman.com/app/userlist:v1
+$ docker tag ssongman/userlist:v1 harbor.ssongman.com/app/userlist:v1.0.1
 
-$ docker tag nginx harbor.ssongman.duckdns.org/app/nginx
+$ docker tag nginx harbor.ssongman.com/app/nginx
 
 
 
@@ -816,7 +854,7 @@ nexus-repo.ssongman.duckdns.org:80/ssongman/userlist   v1                bf0cd99
 nexus-repo.ssongman.duckdns.org/ssongman/userlist      v1                bf0cd99d0bad   5 years ago     680MB
 
 
-$ docker push harbor.ssongman.duckdns.org/app/userlist:v1
+$ docker push harbor.ssongman.com/app/userlist:v1
 The push refers to repository [nexus-repo.ssongman.duckdns.org/ssongman/userlist]
 eec0e531f0de: Pushed
 2a2b4c333b3a: Pushed
@@ -832,8 +870,8 @@ v1: digest: sha256:b0d5a3b6022623b71f09b866a8d612d71118ff9de54c966db91d900c03b31
 
 
 
-$ docker push harbor.ssongman.duckdns.org/app/userlist:v1.0.1
-The push refers to repository [harbor.ssongman.duckdns.org/app/userlist]
+$ docker push harbor.ssongman.com/app/userlist:v1.0.1
+The push refers to repository [harbor.ssongman.com/app/userlist]
 eec0e531f0de: Layer already exists 
 2a2b4c333b3a: Layer already exists 
 35c20f26d188: Layer already exists 
@@ -850,7 +888,7 @@ v1.0.1: digest: sha256:b0d5a3b6022623b71f09b866a8d612d71118ff9de54c966db91d900c0
 
 
 
-$ docker push harbor.ssongman.duckdns.org/app/nginx
+$ docker push harbor.ssongman.com/app/nginx
 
 
 
@@ -960,27 +998,27 @@ $ curl https://nexus-repo.ssongman.duckdns.org/v2 -k
 $ docker images
 REPOSITORY                                             TAG               IMAGE ID       CREATED         SIZE
 ssongman/userlist                                      v1                bf0cd99d0bad   5 years ago     680MB
-harbor.ssongman.duckdns.org/app/userlist               v1                bf0cd99d0bad   5 years ago     680MB
-harbor.ssongman.duckdns.org/app/userlist               v1.0.1            bf0cd99d0bad   5 years ago     680MB
+harbor.ssongman.com/app/userlist               v1                bf0cd99d0bad   5 years ago     680MB
+harbor.ssongman.com/app/userlist               v1.0.1            bf0cd99d0bad   5 years ago     680MB
 
 
 # 존재하는 image 삭제
-$ docker rmi harbor.ssongman.duckdns.org/app/userlist:v1
-$ docker rmi harbor.ssongman.duckdns.org/app/userlist:v1.0.1
+$ docker rmi harbor.ssongman.com/app/userlist:v1
+$ docker rmi harbor.ssongman.com/app/userlist:v1.0.1
 
 
 # image pull
-$ docker pull harbor.ssongman.duckdns.org/app/userlist:v1.0.1
-$ docker pull harbor.ssongman.duckdns.org/app/userlist:v1
-$ docker pull harbor.ssongman.duckdns.org/app/nginx
+$ docker pull harbor.ssongman.com/app/userlist:v1.0.1
+$ docker pull harbor.ssongman.com/app/userlist:v1
+$ docker pull harbor.ssongman.com/app/nginx
 
 
 
 # 확인
 $ docker images
 REPOSITORY                                             TAG               IMAGE ID       CREATED         SIZE
-harbor.ssongman.duckdns.org/app/userlist               v1                bf0cd99d0bad   5 years ago     680MB
-harbor.ssongman.duckdns.org/app/userlist               v1.0.1            bf0cd99d0bad   5 years ago     680MB
+harbor.ssongman.com/app/userlist               v1                bf0cd99d0bad   5 years ago     680MB
+harbor.ssongman.com/app/userlist               v1.0.1            bf0cd99d0bad   5 years ago     680MB
 
 ```
 
@@ -1046,7 +1084,7 @@ $ ll
 ### login / push
 
 ```sh
-$ helm registry login -u admin https://harbor.ssongman.duckdns.org --ca-file ca.crt 
+$ helm registry login -u admin https://harbor.ssongman.com --ca-file ca.crt 
 
 
 # helm push [chart] [remote] [flags]
@@ -1056,7 +1094,7 @@ $ ll
 -rw-r--r--  1 song song 45460 Mar 20 17:59 nginx-15.14.0.tgz
 
 
-$ helm push nginx-15.14.0.tgz oci://harbor.ssongman.duckdns.org/charts/ --ca-file ca.crt 
+$ helm push nginx-15.14.0.tgz oci://harbor.ssongman.com/charts/ --ca-file ca.crt 
 
 
 ```
@@ -1078,13 +1116,13 @@ $ helm repo add \
     --username=admin \
     --password=adminpass \
     ssongmanrepo \
-    oci://harbor.ssongman.duckdns.org/charts/
+    oci://harbor.ssongman.com/charts/
 
 # repo 등록2
 $ helm repo add \
     --ca-file ca.crt \
     ssongmanrepo \
-    https://harbor.ssongman.duckdns.org/charts
+    https://harbor.ssongman.com/charts
 
 ```
 
@@ -1169,20 +1207,20 @@ enWIlpIQ4mRSnbaxl3mrwqPA6/HjfJiS
 
 
 ```sh
-$ docker pull harbor.ssongman.duckdns.org/app2/userlist:v1.0.1
+$ docker pull harbor.ssongman.com/app2/userlist:v1.0.1
 
 Error response from daemon: unknown: resource not found: repo app2/userlist, tag v1 not found
-Error response from daemon: Head "https://harbor.ssongman.duckdns.org/v2/app2/userlist/manifests/v1.0.1": Get "https://harbor.ssongman.duckdns.org/service/token?account=admin&scope=repository%3Aapp2%2Fuserlist%3Apull&service=harbor-registry": dial tcp: lookup harbor.ssongman.duckdns.org on 127.0.0.53:53: read udp 127.0.0.1:53994->127.0.0.53:53: i/o timeout
+Error response from daemon: Head "https://harbor.ssongman.com/v2/app2/userlist/manifests/v1.0.1": Get "https://harbor.ssongman.com/service/token?account=admin&scope=repository%3Aapp2%2Fuserlist%3Apull&service=harbor-registry": dial tcp: lookup harbor.ssongman.com on 127.0.0.53:53: read udp 127.0.0.1:53994->127.0.0.53:53: i/o timeout
 
 
 -------
 
 
-$ docker pull harbor.ssongman.duckdns.org/ssongman/userlist:v1.0.1
+$ docker pull harbor.ssongman.com/ssongman/userlist:v1.0.1
 Error response from daemon: unknown: resource not found: repo ssongman/userlist, tag v1.0.1 not found
 
 
-$ docker pull harbor.ssongman.duckdns.org/ssongman/userlist:v1
+$ docker pull harbor.ssongman.com/ssongman/userlist:v1
 Error response from daemon: unknown: resource not found: repo ssongman/userlist, tag v1 not found
 
 
@@ -1257,7 +1295,7 @@ $ curl --user "dockerpushuser:songpass" \
 
 ```sh
 $ curl --user "admin:adminpass" \
-     https://harbor.ssongman.duckdns.org/v2/_catalog -k
+     https://harbor.ssongman.com/v2/_catalog -k
      
 {"repositories":["ssongman/userlist"]}
  
@@ -1265,7 +1303,7 @@ $ curl --user "admin:adminpass" \
 
 # http 도 잘 된다.
 $ curl --user "admin:adminpass" \
-     http://harbor.ssongman.duckdns.org/v2/_catalog
+     http://harbor.ssongman.com/v2/_catalog
 {"repositories":["ssongman/userlist"]}
      
 ```
@@ -1706,7 +1744,7 @@ type: kubernetes.io/dockerconfigjson
 
 
 ```
-Base URL: harbor.ssongman.duckdns.org/api/v2.0
+Base URL: harbor.ssongman.com/api/v2.0
 ```
 
 
@@ -1717,7 +1755,7 @@ Base URL: harbor.ssongman.duckdns.org/api/v2.0
 
 ```bash
 $ curl -X 'GET' \
-  'https://harbor.ssongman.duckdns.org/api/v2.0/projects?page=1&page_size=10&with_detail=true' \
+  'https://harbor.ssongman.com/api/v2.0/projects?page=1&page_size=10&with_detail=true' \
   -H 'accept: application/json'
 
 [
@@ -1780,7 +1818,7 @@ $ curl -X 'GET' \
 
 ```sh
 $ curl -X 'GET' \
-  'https://harbor.ssongman.duckdns.org/api/v2.0/projects/app' \
+  'https://harbor.ssongman.com/api/v2.0/projects/app' \
   -H 'accept: application/json' \
   -H 'X-Is-Resource-Name: false'
 
@@ -1818,7 +1856,7 @@ $ curl -X 'GET' \
 
 ```sh
 $ curl -X 'GET' \
-  'https://harbor.ssongman.duckdns.org/api/v2.0/projects/app/repositories?page=1&page_size=10' \
+  'https://harbor.ssongman.com/api/v2.0/projects/app/repositories?page=1&page_size=10' \
   -H 'accept: application/json'
 
 
@@ -1857,7 +1895,7 @@ $ curl -X 'GET' \
 
 ```sh
 $ curl -X 'GET' \
-  'https://harbor.ssongman.duckdns.org/api/v2.0/projects/app/repositories/userlist/artifacts?page=1&page_size=10&with_tag=true&with_label=false&with_scan_overview=false&with_signature=false&with_immutable_status=false&with_accessory=false' \
+  'https://harbor.ssongman.com/api/v2.0/projects/app/repositories/userlist/artifacts?page=1&page_size=10&with_tag=true&with_label=false&with_scan_overview=false&with_signature=false&with_immutable_status=false&with_accessory=false' \
   -H 'accept: application/json' \
   -H 'X-Accept-Vulnerabilities: application/vnd.security.vulnerability.report; version=1.1, application/vnd.scanner.adapter.vuln.report.harbor+json; version=1.0'
 
@@ -1948,7 +1986,7 @@ $ curl -X 'GET' \
 
 ```sh
 $ curl -X 'GET' \
-  'https://harbor.ssongman.duckdns.org/api/v2.0/projects/app/repositories/userlist/artifacts/v1/tags?page=1&page_size=10&with_signature=false&with_immutable_status=false' \
+  'https://harbor.ssongman.com/api/v2.0/projects/app/repositories/userlist/artifacts/v1/tags?page=1&page_size=10&with_signature=false&with_immutable_status=false' \
   -H 'accept: application/json'
   
 
@@ -1988,7 +2026,7 @@ $ curl -X 'GET' \
 
 ```sh
 $ curl -X 'DELETE' \
-  'https://harbor.ssongman.duckdns.org/api/v2.0/projects/app/repositories/userlist/artifacts/v1.0.1/tags/v1.0.1' \
+  'https://harbor.ssongman.com/api/v2.0/projects/app/repositories/userlist/artifacts/v1.0.1/tags/v1.0.1' \
   -H 'accept: application/json' \
   -H 'X-Harbor-CSRF-Token: aNgxQDn6kcRhcDMCnzKRyiTBzsnhVKUL+hifurX3N5Vp6CHB03P5jE7N7XmQX+9svNwG96bF9/cTkIJaq2X1hw=='
   
