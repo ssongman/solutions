@@ -97,7 +97,7 @@ $ kubectl delete namespace n8n
 
 ### (1) 환경 변수 설정
 
-n8n의 API 및 UI를 사용할 도메인, DB 연결 정보 등을 설정할 수 있어.
+n8n의 API 및 UI를 사용할 도메인, DB 연결 정보 등을 설정할 수 있음.
 
 ```sh
 
@@ -115,8 +115,6 @@ $ helm install my-n8n n8n/n8n --namespace n8n \
 
 
 ### (2) Persistent Volume (데이터 유지)
-
-n8n 데이터를 유지하려면 Persistent Volume을 활성화해야 해.
 
 ```sh
 
@@ -158,7 +156,7 @@ $ helm install my-n8n n8n/n8n --namespace n8n \
 
 ### (4) Ingress 설정 (도메인 연결)
 
-Ingress를 설정하면 도메인으로 n8n에 접근할 수 있어.
+Ingress를 설정하면 도메인으로 n8n에 접근할 수 있음.
 
 ```sh
 
@@ -215,13 +213,11 @@ http://EXTERNAL-IP:5678
 
 
 
-
-
 ## 4) 업데이트
 
 
 
-새로운 버전이 나오면 업데이트할 수 있어.
+새로운 버전이 나오면 업데이트할 수 있음
 
 ```sh
 
