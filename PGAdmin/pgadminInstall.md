@@ -20,6 +20,9 @@ NAME            CHART VERSION   APP VERSION     DESCRIPTION
 runix/pgadmin4  1.24.0          8.4             pgAdmin4 is a web based administration tool for...
 stable/pgadmin  1.2.3           4.18.0          DEPRECATED - moved to new repo, see source for ...
 
+NAME            CHART VERSION   APP VERSION     DESCRIPTION
+runix/pgadmin4  1.59.0          9.11            pgAdmin4 is a web based administration tool for...
+
 
 
 # values yaml 확인
@@ -49,6 +52,9 @@ $ helm -n pgadmin list
 NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART           APP VERSION
 my-admin        pgadmin         1               2024-03-28 23:04:40.558942712 +0900 KST deployed        pgadmin4-1.24.0 8.4
 
+NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART              APP VERSION
+my-admin        pgadmin         1               2026-02-19 15:05:26.500634058 +0000 UTC deployed        pgadmin4-1.59.0    9.11
+
 
 
 
@@ -69,7 +75,7 @@ $ helm -n pgadmin delete my-admin
 
 ```
 
-http://pgadmin.ssongman.duckdns.org
+http://pgadmin.ssongman.com
 
 ```
 
