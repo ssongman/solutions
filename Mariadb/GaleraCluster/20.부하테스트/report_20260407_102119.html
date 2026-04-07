@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>MariaDB Galera 부하테스트 리포트</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; color: #333; padding: 30px; }
+  h1 { font-size: 1.6rem; margin-bottom: 4px; }
+  .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 30px; }
+  .cards { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 30px; }
+  .card { background: white; border-radius: 10px; padding: 20px 28px; flex: 1;
+           min-width: 140px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  .card .label { font-size: 0.78rem; color: #888; text-transform: uppercase; letter-spacing: .5px; }
+  .card .value { font-size: 2rem; font-weight: 700; color: #2563eb; margin-top: 4px; }
+  .card .unit  { font-size: 0.85rem; color: #555; }
+  section { background: white; border-radius: 10px; padding: 24px;
+             box-shadow: 0 2px 8px rgba(0,0,0,.08); margin-bottom: 24px; }
+  h2 { font-size: 1.1rem; margin-bottom: 16px; border-left: 4px solid #2563eb;
+        padding-left: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th { background: #f8fafc; text-align: left; padding: 10px 14px;
+        border-bottom: 2px solid #e2e8f0; color: #555; font-weight: 600; }
+  td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; }
+  tr:last-child td { border-bottom: none; }
+  .highlight { color: #dc2626; font-weight: 600; }
+  .err { color: #dc2626; font-weight: 700; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px;
+            font-size: 0.78rem; font-weight: 700; color: white; }
+  .badge-insert { background: #2563eb; }
+  .badge-select { background: #16a34a; }
+  .badge-update { background: #d97706; }
+  .badge-delete { background: #dc2626; }
+  .bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .bar { height: 14px; background: #2563eb; border-radius: 4px; min-width: 4px; }
+  .config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 10px; }
+  .cfg-item { background: #f8fafc; border-radius: 6px; padding: 10px 14px; font-size: 0.88rem; }
+  .cfg-item .k { color: #888; font-size: 0.78rem; }
+  .cfg-item .v { font-weight: 600; margin-top: 2px; }
+  footer { text-align: center; color: #aaa; font-size: 0.8rem; margin-top: 30px; }
+</style>
+</head>
+<body>
+
+<h1>MariaDB Galera Cluster 부하테스트 리포트</h1>
+<p class="subtitle">생성 시각: 2026-04-07 10:21:19</p>
+
+<div class="cards">
+  <div class="card">
+    <div class="label">총 쿼리</div>
+    <div class="value">3,411</div>
+    <div class="unit">queries</div>
+  </div>
+  <div class="card">
+    <div class="label">QPS</div>
+    <div class="value">168.0</div>
+    <div class="unit">queries/sec</div>
+  </div>
+  <div class="card">
+    <div class="label">TPS (트랜잭션)</div>
+    <div class="value">54.2</div>
+    <div class="unit">tx/sec</div>
+  </div>
+  <div class="card">
+    <div class="label">동시 접속</div>
+    <div class="value">10</div>
+    <div class="unit">threads</div>
+  </div>
+  <div class="card">
+    <div class="label">테스트 시간</div>
+    <div class="value">20.3</div>
+    <div class="unit">초</div>
+  </div>
+  <div class="card">
+    <div class="label">총 에러</div>
+    <div class="value" style="color:#16a34a">0</div>
+    <div class="unit">errors</div>
+  </div>
+</div>
+
+<section>
+  <h2>오퍼레이션별 레이턴시 (ms)</h2>
+  <table>
+    <tr>
+      <th>Operation</th><th>Count</th><th>Avg</th><th>Min</th><th>Max</th>
+      <th>P50</th><th>P95</th><th>P99</th>
+    </tr>
+    
+            <tr>
+                <td><span class="badge badge-insert">INSERT</span></td>
+                <td>1,101</td>
+                <td>44.59</td>
+                <td>22.66</td>
+                <td>273.52</td>
+                <td>40.6</td>
+                <td class="highlight">66.17</td>
+                <td class="highlight">121.13</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-select">SELECT</span></td>
+                <td>1,101</td>
+                <td>87.61</td>
+                <td>50.31</td>
+                <td>302.42</td>
+                <td>81.12</td>
+                <td class="highlight">118.25</td>
+                <td class="highlight">295.36</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-update">UPDATE</span></td>
+                <td>1,101</td>
+                <td>44.75</td>
+                <td>24.09</td>
+                <td>265.69</td>
+                <td>40.55</td>
+                <td class="highlight">65.64</td>
+                <td class="highlight">120.48</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-delete">DELETE</span></td>
+                <td>108</td>
+                <td>43.57</td>
+                <td>27.62</td>
+                <td>198.36</td>
+                <td>40.98</td>
+                <td class="highlight">58.11</td>
+                <td class="highlight">79.0</td>
+            </tr>
+  </table>
+</section>
+
+<section>
+  <h2>노드별 쿼리 분산</h2>
+  <table>
+    <tr><th>Node (hostname)</th><th>Hit Count</th><th>분산 비율</th></tr>
+    
+            <tr>
+                <td>song-maria01</td>
+                <td>1,111</td>
+                <td>
+                    <div class="bar-wrap">
+                        <div class="bar" style="width:100.0%"></div>
+                        <span>100.0%</span>
+                    </div>
+                </td>
+            </tr>
+  </table>
+</section>
+
+<section>
+  <h2>에러 현황</h2>
+  <table>
+    <tr><th>Operation</th><th>Error Count</th></tr>
+    <tr><td colspan='2'>에러 없음</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>테스트 설정</h2>
+  <div class="config-grid">
+    <div class="cfg-item"><div class="k">Host</div><div class="v">14.63.223.198</div></div>
+    <div class="cfg-item"><div class="k">Port</div><div class="v">3306</div></div>
+    <div class="cfg-item"><div class="k">User</div><div class="v">appuser</div></div>
+    <div class="cfg-item"><div class="k">Database</div><div class="v">loadtest</div></div>
+    <div class="cfg-item"><div class="k">Workers (Threads)</div><div class="v">10</div></div>
+    <div class="cfg-item"><div class="k">Duration</div><div class="v">20.3s</div></div>
+  </div>
+</section>
+
+<footer>MariaDB Galera Cluster Load Test · 2026-04-07 10:21:19</footer>
+</body>
+</html>
