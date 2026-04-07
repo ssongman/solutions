@@ -102,6 +102,29 @@ python3 -m http.server 8080 --directory dist
 
 ---
 
+## Git 관리 (.gitignore)
+
+아래 항목들은 git에 포함되지 않습니다. clone 후 재생성이 필요합니다.
+
+| 제외 항목 | 이유 | 재생성 방법 |
+|----------|------|------------|
+| `node_modules/` | npm 의존성 (용량 큼) | `npm install` |
+| `package-lock.json` | 로컬 환경 의존적 | `npm install` 시 자동 생성 |
+| `dist/` | 빌드 결과물 | `npm run build` |
+
+### clone 후 초기 실행 순서
+
+```sh
+git clone <repo>
+cd SSG/Astro
+
+npm install       # 의존성 설치
+npm run build     # dist/ 생성
+npm run preview   # 확인
+```
+
+---
+
 ## Astro vs 다른 SSG 비교
 
 | | Astro | MkDocs | VitePress | Jekyll |

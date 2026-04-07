@@ -121,6 +121,29 @@ nginx / Apache
 
 ---
 
+## Git 관리 (.gitignore)
+
+아래 항목들은 git에 포함되지 않습니다. clone 후 재생성이 필요합니다.
+
+| 제외 항목 | 이유 | 재생성 방법 |
+|----------|------|------------|
+| `site/` | 빌드 결과물 | `mkdocs build` |
+| `venv/` | Python 가상환경 (로컬 전용) | `python3 -m venv venv` |
+| `__pycache__/` | Python 캐시 | 자동 생성 |
+
+### clone 후 초기 실행 순서
+
+```sh
+git clone <repo>
+cd SSG/MkDocs
+
+pip3 install mkdocs-material   # 패키지 설치
+mkdocs build                   # site/ 생성
+open site/index.html           # 브라우저에서 확인 (macOS)
+```
+
+---
+
 ## MkDocs vs 다른 SSG 비교
 
 | | MkDocs | Astro | VitePress | Jekyll |
