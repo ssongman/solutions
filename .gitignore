@@ -1,7 +1,21 @@
 
-.DS_Store
-
+# 시크릿
 .env
 
+# macOS
+.DS_Store
+
+# Python
 venv/
+__pycache__/
+*.pyc
+
+# MkDocs 빌드 결과물
 site/
+
+# Astro 빌드 결과물
+dist/
+
+# Node.js
+node_modules/
+package-lock.json
