@@ -1,0 +1,12 @@
+/* Azure 브랜드 컬러 */
+:root {
+  --sl-color-accent-low: #cce4f7;
+  --sl-color-accent: #0078d4;
+  --sl-color-accent-high: #004e8c;
+}
+
+:root[data-theme='dark'] {
+  --sl-color-accent-low: #003a6c;
+  --sl-color-accent: #0090f1;
+  --sl-color-accent-high: #a8d4f5;
+}

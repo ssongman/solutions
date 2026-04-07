@@ -1,0 +1,79 @@
+<!DOCTYPE html><html lang="ko" data-astro-cid-fz5pa65a> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>설계 원칙 | Azure 랜딩존 가이드</title><link rel="stylesheet" href="/_astro/_slug_.DuhP4zPR.css"><script type="module">const r=document.querySelectorAll("main h2, main h3"),s=document.querySelectorAll(".toc-list a"),i=new IntersectionObserver(e=>{e.forEach(t=>{if(t.isIntersecting){s.forEach(o=>o.classList.remove("active"));const c=document.querySelector(`.toc-list a[href="#${t.target.id}"]`);c&&c.classList.add("active")}})},{rootMargin:"-10% 0px -80% 0px"});r.forEach(e=>i.observe(e));
+</script></head> <body data-astro-cid-fz5pa65a> <header data-astro-cid-fz5pa65a> <a href="/index.html" data-astro-cid-fz5pa65a>Azure 랜딩존 가이드</a> <span data-astro-cid-fz5pa65a>엔터프라이즈 클라우드 기반 아키텍처</span> </header> <div class="page" data-astro-cid-fz5pa65a> <nav class="sidebar" data-astro-cid-fz5pa65a> <a href="/index.html" style="padding-left:1.25rem; font-weight:600;" data-astro-cid-fz5pa65a>홈</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>1. 개요</div> <a href="/01.개요/01.랜딩존이란.html" data-astro-cid-fz5pa65a>랜딩존이란?</a><a href="/01.개요/02.설계원칙.html" data-astro-cid-fz5pa65a>설계 원칙</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>2. 관리 그룹</div> <a href="/02.관리그룹/01.관리그룹구조.html" data-astro-cid-fz5pa65a>관리 그룹 구조</a><a href="/02.관리그룹/02.정책할당.html" data-astro-cid-fz5pa65a>정책 할당</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>3. 네트워킹</div> <a href="/03.네트워킹/01.허브스포크.html" data-astro-cid-fz5pa65a>허브-스포크</a><a href="/03.네트워킹/02.DNS설정.html" data-astro-cid-fz5pa65a>DNS 설정</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>4. 보안</div> <a href="/04.보안/01.ID관리.html" data-astro-cid-fz5pa65a>ID 관리</a><a href="/04.보안/02.보안기준선.html" data-astro-cid-fz5pa65a>보안 기준선</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>5. 운영</div> <a href="/05.운영/01.모니터링.html" data-astro-cid-fz5pa65a>모니터링</a> </nav> <main data-astro-cid-fz5pa65a>  <h1>설계 원칙</h1>
+<p>Azure 랜딩존 설계는 Microsoft CAF가 정의한 <strong>8가지 핵심 원칙</strong>을 기반으로 합니다.<br>모든 아키텍처 의사결정은 이 원칙에 따라 이루어져야 합니다.</p>
+<hr>
+<h2>8가지 설계 원칙</h2>
+<h3>1. 구독 민주화 (Subscription Democratization)</h3>
+<p>구독은 <strong>워크로드 격리와 확장의 단위</strong>입니다.</p>
+<ul>
+<li>팀/애플리케이션 단위로 구독 분리</li>
+<li>중앙 팀이 구독 생성을 지연시키지 않아야 함</li>
+<li>셀프서비스 구독 발급 프로세스 마련</li>
+</ul>
+<pre><code>❌ 나쁜 예: 모든 팀이 하나의 구독 공유
+✅ 좋은 예: Dev / Staging / Prod 구독 분리
+</code></pre>
+<h3>2. 정책 기반 거버넌스 (Policy-Driven Governance)</h3>
+<p>수동 검토 대신 <strong>Azure Policy로 자동 적용</strong>합니다.</p>
+<ul>
+<li>리소스 배포 시 자동 정책 평가</li>
+<li>비준수 리소스 자동 수정 (remediation)</li>
+<li>자세한 내용: <a href="../02.%EA%B4%80%EB%A6%AC%EA%B7%B8%EB%A3%B9/02.%EC%A0%95%EC%B1%85%ED%95%A0%EB%8B%B9.html">정책 할당</a></li>
+</ul>
+<h3>3. 단일 제어 및 관리 평면</h3>
+<p>모든 거버넌스는 <strong>Azure Resource Manager(ARM)</strong> 를 통해 일관성 있게 적용합니다.</p>
+<h3>4. 애플리케이션 중심 서비스 모델</h3>
+<p>플랫폼 팀은 <strong>애플리케이션 팀이 빠르게 배포</strong>할 수 있도록 기반을 제공합니다.</p>
+<h3>5. Azure 네이티브 설계</h3>
+<ul>
+<li>PaaS 서비스 우선 활용</li>
+<li>허브-스포크 네트워크 → <a href="../03.%EB%84%A4%ED%8A%B8%EC%9B%8C%ED%82%B9/01.%ED%97%88%EB%B8%8C%EC%8A%A4%ED%8F%AC%ED%81%AC.html">허브-스포크 토폴로지</a> 참조</li>
+</ul>
+<h3>6. 초기부터 Azure 하이브리드 고려</h3>
+<p>온프레미스 연결(ExpressRoute / VPN)을 초기 설계에 반영합니다.</p>
+<h3>7. 최소 권한 접근 원칙</h3>
+<p>RBAC을 통해 <strong>필요한 권한만 부여</strong>합니다. → <a href="../04.%EB%B3%B4%EC%95%88/01.ID%EA%B4%80%EB%A6%AC.html">ID 관리</a> 참조</p>
+<h3>8. 변화 수용 설계</h3>
+<p>랜딩존은 처음부터 완벽하지 않아도 됩니다. <strong>반복적으로 개선</strong>하는 구조로 설계합니다.</p>
+<hr>
+<h2>설계 영역 (Design Areas)</h2>
+<table>
+<thead>
+<tr>
+<th>영역</th>
+<th>주요 의사결정</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Azure Billing</td>
+<td>EA / MCA 계정 구조</td>
+</tr>
+<tr>
+<td>ID &amp; 접근 관리</td>
+<td>Azure AD 테넌트, RBAC</td>
+</tr>
+<tr>
+<td>관리 그룹</td>
+<td>계층 구조, 정책 상속</td>
+</tr>
+<tr>
+<td>네트워크 토폴로지</td>
+<td>허브-스포크 vs VWAN</td>
+</tr>
+<tr>
+<td>보안</td>
+<td>Defender, Sentinel</td>
+</tr>
+<tr>
+<td>관리 (운영)</td>
+<td>Log Analytics, 백업</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>다음 단계</h2>
+<ul>
+<li><a href="../02.%EA%B4%80%EB%A6%AC%EA%B7%B8%EB%A3%B9/01.%EA%B4%80%EB%A6%AC%EA%B7%B8%EB%A3%B9%EA%B5%AC%EC%A1%B0.html">관리 그룹 구조</a> — 설계 원칙을 관리 그룹에 적용</li>
+<li><a href="01.%EB%9E%9C%EB%94%A9%EC%A1%B4%EC%9D%B4%EB%9E%80.html">랜딩존이란?</a> — 이전 페이지</li>
+<li><a href="../index.html">홈으로</a></li>
+</ul>
+  </main> <aside class="toc" data-astro-cid-fz5pa65a>  <div class="toc-title" data-astro-cid-fz5pa65a>이 페이지</div> <ul class="toc-list" data-astro-cid-fz5pa65a> <li data-astro-cid-fz5pa65a> <a href="#8가지-설계-원칙" class="" data-astro-cid-fz5pa65a> 8가지 설계 원칙 </a> </li><li data-astro-cid-fz5pa65a> <a href="#1-구독-민주화-subscription-democratization" class="toc-h3" data-astro-cid-fz5pa65a> 1. 구독 민주화 (Subscription Democratization) </a> </li><li data-astro-cid-fz5pa65a> <a href="#2-정책-기반-거버넌스-policy-driven-governance" class="toc-h3" data-astro-cid-fz5pa65a> 2. 정책 기반 거버넌스 (Policy-Driven Governance) </a> </li><li data-astro-cid-fz5pa65a> <a href="#3-단일-제어-및-관리-평면" class="toc-h3" data-astro-cid-fz5pa65a> 3. 단일 제어 및 관리 평면 </a> </li><li data-astro-cid-fz5pa65a> <a href="#4-애플리케이션-중심-서비스-모델" class="toc-h3" data-astro-cid-fz5pa65a> 4. 애플리케이션 중심 서비스 모델 </a> </li><li data-astro-cid-fz5pa65a> <a href="#5-azure-네이티브-설계" class="toc-h3" data-astro-cid-fz5pa65a> 5. Azure 네이티브 설계 </a> </li><li data-astro-cid-fz5pa65a> <a href="#6-초기부터-azure-하이브리드-고려" class="toc-h3" data-astro-cid-fz5pa65a> 6. 초기부터 Azure 하이브리드 고려 </a> </li><li data-astro-cid-fz5pa65a> <a href="#7-최소-권한-접근-원칙" class="toc-h3" data-astro-cid-fz5pa65a> 7. 최소 권한 접근 원칙 </a> </li><li data-astro-cid-fz5pa65a> <a href="#8-변화-수용-설계" class="toc-h3" data-astro-cid-fz5pa65a> 8. 변화 수용 설계 </a> </li><li data-astro-cid-fz5pa65a> <a href="#설계-영역-design-areas" class="" data-astro-cid-fz5pa65a> 설계 영역 (Design Areas) </a> </li><li data-astro-cid-fz5pa65a> <a href="#다음-단계" class="" data-astro-cid-fz5pa65a> 다음 단계 </a> </li> </ul>  </aside> </div>  </body> </html>

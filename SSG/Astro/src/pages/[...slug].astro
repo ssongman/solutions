@@ -1,0 +1,55 @@
+---
+import { marked } from 'marked';
+import fs from 'node:fs';
+import path from 'node:path';
+import DocLayout from '../layouts/DocLayout.astro';
+
+// 1) 빌드 시 docs/ 아래 모든 .md 파일을 경로로 수집
+export async function getStaticPaths() {
+  const docsDir = path.resolve('./docs');
+
+  function walk(dir: string, base: string): string[] {
+    return fs.readdirSync(dir).flatMap(name => {
+      const full = path.join(dir, name);
+      const rel  = path.join(base, name);
+      return fs.statSync(full).isDirectory()
+        ? walk(full, rel)
+        : rel.endsWith('.md') ? [rel] : [];
+    });
+  }
+
+  return walk(docsDir, '').map(rel => {
+    // slug: 확장자 제거, OS 구분자 → /
+    const slug = rel.replace(/\.md$/, '').replace(/\\/g, '/');
+    return { params: { slug } };
+  });
+}
+
+// 2) 현재 slug 에 해당하는 .md 파일 읽기
+const { slug } = Astro.params;
+const filePath = path.resolve(`./docs/${slug}.md`);
+const raw = fs.readFileSync(filePath, 'utf-8');
+
+// 3) 첫 번째 # 제목 추출 → title
+const titleMatch = raw.match(/^#\s+(.+)$/m);
+const title = titleMatch ? titleMatch[1] : slug;
+
+// 4) markdown → HTML 변환 (링크의 .md → .html 치환)
+const md = raw.replace(/\(([^)]+)\.md\)/g, '($1.html)');
+const content = await marked(md, { gfm: true });
+
+// 5) h2/h3 헤딩 추출 → TOC
+const headingMatches = [...raw.matchAll(/^(#{2,3})\s+(.+)$/gm)];
+const headings = headingMatches.map(m => ({
+  depth: m[1].length,
+  text:  m[2],
+  slug:  m[2].toLowerCase()
+          .replace(/[^\w가-힣\s-]/g, '')
+          .trim()
+          .replace(/\s+/g, '-'),
+}));
+---
+
+<DocLayout title={title} headings={headings}>
+  <Fragment set:html={content} />
+</DocLayout>

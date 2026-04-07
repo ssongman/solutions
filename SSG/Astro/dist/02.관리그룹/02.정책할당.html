@@ -1,0 +1,102 @@
+<!DOCTYPE html><html lang="ko" data-astro-cid-fz5pa65a> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>정책 할당 (Azure Policy) | Azure 랜딩존 가이드</title><link rel="stylesheet" href="/_astro/_slug_.DuhP4zPR.css"><script type="module">const r=document.querySelectorAll("main h2, main h3"),s=document.querySelectorAll(".toc-list a"),i=new IntersectionObserver(e=>{e.forEach(t=>{if(t.isIntersecting){s.forEach(o=>o.classList.remove("active"));const c=document.querySelector(`.toc-list a[href="#${t.target.id}"]`);c&&c.classList.add("active")}})},{rootMargin:"-10% 0px -80% 0px"});r.forEach(e=>i.observe(e));
+</script></head> <body data-astro-cid-fz5pa65a> <header data-astro-cid-fz5pa65a> <a href="/index.html" data-astro-cid-fz5pa65a>Azure 랜딩존 가이드</a> <span data-astro-cid-fz5pa65a>엔터프라이즈 클라우드 기반 아키텍처</span> </header> <div class="page" data-astro-cid-fz5pa65a> <nav class="sidebar" data-astro-cid-fz5pa65a> <a href="/index.html" style="padding-left:1.25rem; font-weight:600;" data-astro-cid-fz5pa65a>홈</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>1. 개요</div> <a href="/01.개요/01.랜딩존이란.html" data-astro-cid-fz5pa65a>랜딩존이란?</a><a href="/01.개요/02.설계원칙.html" data-astro-cid-fz5pa65a>설계 원칙</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>2. 관리 그룹</div> <a href="/02.관리그룹/01.관리그룹구조.html" data-astro-cid-fz5pa65a>관리 그룹 구조</a><a href="/02.관리그룹/02.정책할당.html" data-astro-cid-fz5pa65a>정책 할당</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>3. 네트워킹</div> <a href="/03.네트워킹/01.허브스포크.html" data-astro-cid-fz5pa65a>허브-스포크</a><a href="/03.네트워킹/02.DNS설정.html" data-astro-cid-fz5pa65a>DNS 설정</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>4. 보안</div> <a href="/04.보안/01.ID관리.html" data-astro-cid-fz5pa65a>ID 관리</a><a href="/04.보안/02.보안기준선.html" data-astro-cid-fz5pa65a>보안 기준선</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>5. 운영</div> <a href="/05.운영/01.모니터링.html" data-astro-cid-fz5pa65a>모니터링</a> </nav> <main data-astro-cid-fz5pa65a>  <h1>정책 할당 (Azure Policy)</h1>
+<p>Azure Policy는 <strong>리소스 배포 시 자동으로 규칙을 평가하고 적용</strong>하는 거버넌스 도구입니다.<br>랜딩존에서는 정책을 관리 그룹 단위로 할당하여 모든 구독에 일관성 있게 적용합니다.</p>
+<hr>
+<h2>정책 효과 (Effect) 종류</h2>
+<table>
+<thead>
+<tr>
+<th>Effect</th>
+<th>동작</th>
+<th>사용 시점</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Deny</strong></td>
+<td>비준수 리소스 배포 차단</td>
+<td>허용 불가 설정 강제</td>
+</tr>
+<tr>
+<td><strong>Audit</strong></td>
+<td>배포는 허용, 비준수 리소스 기록</td>
+<td>모니터링 목적</td>
+</tr>
+<tr>
+<td><strong>Append</strong></td>
+<td>리소스에 속성 자동 추가</td>
+<td>태그 자동 추가</td>
+</tr>
+<tr>
+<td><strong>DeployIfNotExists</strong></td>
+<td>리소스 배포 시 연관 리소스 자동 생성</td>
+<td>진단 설정, 에이전트 설치</td>
+</tr>
+<tr>
+<td><strong>Modify</strong></td>
+<td>기존 리소스 속성 수정</td>
+<td>태그 정규화</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>랜딩존 필수 정책 목록</h2>
+<h3>Root Management Group (전사 공통)</h3>
+<pre><code>✅ 허용 리전 제한 (Korea Central, Korea South만 허용)
+✅ 필수 태그 강제 (Environment, Owner, CostCenter)
+✅ 허용 리소스 유형 제한
+✅ Azure Security Benchmark 적용
+✅ 진단 로그 → Log Analytics 자동 전송 (DeployIfNotExists)
+</code></pre>
+<h3>Platform / Connectivity</h3>
+<pre><code>✅ VNet에 Network Watcher 자동 활성화
+✅ NSG Flow Log 강제 활성화
+✅ Private Endpoint만 허용 (PaaS 서비스)
+</code></pre>
+<h3>Landing Zones / Corp</h3>
+<pre><code>✅ VM에 Defender for Endpoint 자동 설치
+✅ 공인 IP 생성 Deny
+✅ Azure Firewall을 통한 인터넷 아웃바운드만 허용
+</code></pre>
+<h3>Sandbox</h3>
+<pre><code>✅ VM SKU 제한 (D2s_v3 이하만 허용)
+✅ 월 예산 초과 시 알림
+</code></pre>
+<hr>
+<h2>정책 할당 예시 (Azure CLI)</h2>
+<pre><code class="language-bash"># 관리 그룹에 허용 리전 제한 정책 할당
+az policy assignment create \
+  --name &quot;allowed-locations&quot; \
+  --scope &quot;/providers/Microsoft.Management/managementGroups/root-mg&quot; \
+  --policy &quot;e56962a6-4747-49cd-b67b-bf8b01975c4f&quot; \
+  --params &#39;{&quot;listOfAllowedLocations&quot;: {&quot;value&quot;: [&quot;koreacentral&quot;, &quot;koreasouth&quot;]}}&#39;
+</code></pre>
+<hr>
+<h2>Policy Initiative (정책 묶음)</h2>
+<p>여러 정책을 하나의 <strong>Initiative(이니셔티브)</strong> 로 묶어 관리합니다.</p>
+<pre><code>Landing Zone Baseline Initiative
+├── 허용 리전 제한
+├── 필수 태그 강제
+├── 진단 로그 설정
+└── Defender 에이전트 자동 설치
+</code></pre>
+<pre><code class="language-bash"># Initiative 정의 후 관리 그룹에 할당
+az policy set-definition create \
+  --name &quot;lz-baseline&quot; \
+  --definitions &quot;@lz-baseline-policies.json&quot;
+</code></pre>
+<hr>
+<h2>비준수 리소스 처리</h2>
+<p>정책 할당 후 기존 비준수 리소스는 <strong>Remediation Task</strong>로 일괄 수정합니다.</p>
+<pre><code class="language-bash">az policy remediation create \
+  --name &quot;fix-diagnostic-settings&quot; \
+  --policy-assignment &quot;lz-diag-settings&quot; \
+  --resource-discovery-mode ReEvaluateCompliance
+</code></pre>
+<hr>
+<h2>다음 단계</h2>
+<ul>
+<li><a href="01.%EA%B4%80%EB%A6%AC%EA%B7%B8%EB%A3%B9%EA%B5%AC%EC%A1%B0.html">관리 그룹 구조</a> — 이전 페이지</li>
+<li><a href="../03.%EB%84%A4%ED%8A%B8%EC%9B%8C%ED%82%B9/01.%ED%97%88%EB%B8%8C%EC%8A%A4%ED%8F%AC%ED%81%AC.html">허브-스포크 네트워크</a> — 네트워크 설계</li>
+<li><a href="../04.%EB%B3%B4%EC%95%88/02.%EB%B3%B4%EC%95%88%EA%B8%B0%EC%A4%80%EC%84%A0.html">보안 기준선</a> — 정책과 연계된 보안 설정</li>
+<li><a href="../index.html">홈으로</a></li>
+</ul>
+  </main> <aside class="toc" data-astro-cid-fz5pa65a>  <div class="toc-title" data-astro-cid-fz5pa65a>이 페이지</div> <ul class="toc-list" data-astro-cid-fz5pa65a> <li data-astro-cid-fz5pa65a> <a href="#정책-효과-effect-종류" class="" data-astro-cid-fz5pa65a> 정책 효과 (Effect) 종류 </a> </li><li data-astro-cid-fz5pa65a> <a href="#랜딩존-필수-정책-목록" class="" data-astro-cid-fz5pa65a> 랜딩존 필수 정책 목록 </a> </li><li data-astro-cid-fz5pa65a> <a href="#root-management-group-전사-공통" class="toc-h3" data-astro-cid-fz5pa65a> Root Management Group (전사 공통) </a> </li><li data-astro-cid-fz5pa65a> <a href="#platform-connectivity" class="toc-h3" data-astro-cid-fz5pa65a> Platform / Connectivity </a> </li><li data-astro-cid-fz5pa65a> <a href="#landing-zones-corp" class="toc-h3" data-astro-cid-fz5pa65a> Landing Zones / Corp </a> </li><li data-astro-cid-fz5pa65a> <a href="#sandbox" class="toc-h3" data-astro-cid-fz5pa65a> Sandbox </a> </li><li data-astro-cid-fz5pa65a> <a href="#정책-할당-예시-azure-cli" class="" data-astro-cid-fz5pa65a> 정책 할당 예시 (Azure CLI) </a> </li><li data-astro-cid-fz5pa65a> <a href="#policy-initiative-정책-묶음" class="" data-astro-cid-fz5pa65a> Policy Initiative (정책 묶음) </a> </li><li data-astro-cid-fz5pa65a> <a href="#비준수-리소스-처리" class="" data-astro-cid-fz5pa65a> 비준수 리소스 처리 </a> </li><li data-astro-cid-fz5pa65a> <a href="#다음-단계" class="" data-astro-cid-fz5pa65a> 다음 단계 </a> </li> </ul>  </aside> </div>  </body> </html>

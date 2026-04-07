@@ -1,0 +1,279 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+  headings?: { depth: number; slug: string; text: string }[];
+}
+const { title, description = '', headings = [] } = Astro.props;
+const tocHeadings = headings.filter(h => h.depth === 2 || h.depth === 3);
+
+const nav = [
+  { label: '홈', href: '/index.html' },
+  {
+    label: '1. 개요', items: [
+      { label: '랜딩존이란?', href: '/01.개요/01.랜딩존이란.html' },
+      { label: '설계 원칙',   href: '/01.개요/02.설계원칙.html' },
+    ]
+  },
+  {
+    label: '2. 관리 그룹', items: [
+      { label: '관리 그룹 구조', href: '/02.관리그룹/01.관리그룹구조.html' },
+      { label: '정책 할당',      href: '/02.관리그룹/02.정책할당.html' },
+    ]
+  },
+  {
+    label: '3. 네트워킹', items: [
+      { label: '허브-스포크',  href: '/03.네트워킹/01.허브스포크.html' },
+      { label: 'DNS 설정',     href: '/03.네트워킹/02.DNS설정.html' },
+    ]
+  },
+  {
+    label: '4. 보안', items: [
+      { label: 'ID 관리',   href: '/04.보안/01.ID관리.html' },
+      { label: '보안 기준선', href: '/04.보안/02.보안기준선.html' },
+    ]
+  },
+  {
+    label: '5. 운영', items: [
+      { label: '모니터링', href: '/05.운영/01.모니터링.html' },
+    ]
+  },
+];
+---
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title} | Azure 랜딩존 가이드</title>
+  {description && <meta name="description" content={description} />}
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --azure:       #0078d4;
+      --azure-dark:  #004e8c;
+      --azure-light: #cce4f7;
+      --sidebar-w:   240px;
+      --toc-w:       220px;
+      --header-h:    56px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      color: #1f2937;
+      background: #f9fafb;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ── Header ─────────────────────────────── */
+    header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: var(--header-h);
+      background: var(--azure);
+      display: flex; align-items: center; padding: 0 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    }
+    header a { color: #fff; text-decoration: none; font-size: 1.1rem; font-weight: 700; }
+    header span { color: var(--azure-light); margin-left: .5rem; font-size: .85rem; font-weight: 400; }
+
+    /* ── Layout ──────────────────────────────── */
+    .page {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr var(--toc-w);
+      margin-top: var(--header-h);
+      min-height: calc(100vh - var(--header-h));
+    }
+
+    /* ── Sidebar (Left) ──────────────────────── */
+    nav.sidebar {
+      width: var(--sidebar-w);
+      background: #fff;
+      border-right: 1px solid #e5e7eb;
+      padding: 1.5rem 0;
+      position: sticky;
+      top: var(--header-h);
+      height: calc(100vh - var(--header-h));
+      overflow-y: auto;
+    }
+    .nav-group-label {
+      padding: .35rem 1.25rem;
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #6b7280;
+      margin-top: 1rem;
+    }
+    .nav-group-label:first-child { margin-top: 0; }
+    nav.sidebar a {
+      display: block;
+      padding: .42rem 1.25rem .42rem 1.75rem;
+      color: #374151;
+      text-decoration: none;
+      font-size: .88rem;
+      border-left: 3px solid transparent;
+      transition: all .15s;
+    }
+    nav.sidebar a:hover, nav.sidebar a.active {
+      color: var(--azure);
+      background: var(--azure-light);
+      border-left-color: var(--azure);
+    }
+    nav.sidebar > a {
+      padding-left: 1.25rem;
+      font-weight: 600;
+    }
+
+    /* ── Main Content (Center) ───────────────── */
+    main {
+      padding: 2.5rem 2.5rem;
+      min-width: 0;      /* grid 자식의 overflow 방지 */
+      max-width: 100%;
+    }
+
+    /* ── TOC (Right) ─────────────────────────── */
+    aside.toc {
+      width: var(--toc-w);
+      padding: 2rem 1.25rem;
+      position: sticky;
+      top: var(--header-h);
+      height: calc(100vh - var(--header-h));
+      overflow-y: auto;
+      border-left: 1px solid #e5e7eb;
+      background: #fff;
+    }
+    .toc-title {
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #6b7280;
+      margin-bottom: .75rem;
+    }
+    .toc-list { list-style: none; padding: 0; }
+    .toc-list li { margin-bottom: .1rem; }
+    .toc-list a {
+      display: block;
+      font-size: .82rem;
+      color: #6b7280;
+      text-decoration: none;
+      padding: .3rem .5rem;
+      border-radius: 4px;
+      border-left: 2px solid transparent;
+      transition: all .15s;
+      line-height: 1.4;
+    }
+    .toc-list a:hover, .toc-list a.active {
+      color: var(--azure);
+      background: var(--azure-light);
+      border-left-color: var(--azure);
+    }
+    .toc-list .toc-h3 { padding-left: 1.1rem; font-size: .79rem; }
+
+    /* ── Typography ──────────────────────────── */
+    main h1 { font-size: 2rem; color: #111827; margin-bottom: 1rem; padding-bottom: .5rem; border-bottom: 2px solid var(--azure-light); }
+    main h2 { font-size: 1.35rem; color: #1e3a5f; margin: 2rem 0 .75rem; }
+    main h3 { font-size: 1.1rem; color: #374151; margin: 1.5rem 0 .5rem; }
+    main p  { margin-bottom: 1rem; }
+    main a  { color: var(--azure); text-decoration: none; border-bottom: 1px solid var(--azure-light); }
+    main a:hover { border-bottom-color: var(--azure); }
+    main ul, main ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    main li { margin-bottom: .3rem; }
+    main hr { border: none; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+    main strong { color: #111827; }
+
+    /* ── Table ───────────────────────────────── */
+    main table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: .9rem; }
+    main th { background: #eff6ff; text-align: left; padding: .6rem .9rem; border: 1px solid #dbeafe; color: var(--azure-dark); font-weight: 600; }
+    main td { padding: .55rem .9rem; border: 1px solid #e5e7eb; }
+    main tr:nth-child(even) td { background: #f9fafb; }
+
+    /* ── Code ────────────────────────────────── */
+    main pre {
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      margin: 1rem 0 1.5rem;
+      font-size: .85rem;
+      line-height: 1.6;
+    }
+    main code:not(pre code) {
+      background: #f1f5f9;
+      color: #0f172a;
+      padding: .15em .4em;
+      border-radius: 4px;
+      font-size: .88em;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/index.html">Azure 랜딩존 가이드</a>
+    <span>엔터프라이즈 클라우드 기반 아키텍처</span>
+  </header>
+
+  <div class="page">
+    <nav class="sidebar">
+      {nav.map(item => (
+        item.items ? (
+          <>
+            <div class="nav-group-label">{item.label}</div>
+            {item.items.map(sub => (
+              <a href={sub.href}>{sub.label}</a>
+            ))}
+          </>
+        ) : (
+          <a href={item.href} style="padding-left:1.25rem; font-weight:600;">{item.label}</a>
+        )
+      ))}
+    </nav>
+
+    <main>
+      <slot />
+    </main>
+
+    <aside class="toc">
+      {tocHeadings.length > 0 && (
+        <>
+          <div class="toc-title">이 페이지</div>
+          <ul class="toc-list">
+            {tocHeadings.map(h => (
+              <li>
+                <a href={`#${h.slug}`} class={h.depth === 3 ? 'toc-h3' : ''}>
+                  {h.text}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </aside>
+  </div>
+
+  <script>
+    // TOC 스크롤 하이라이트
+    const headings = document.querySelectorAll('main h2, main h3');
+    const tocLinks = document.querySelectorAll('.toc-list a');
+
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          tocLinks.forEach(a => a.classList.remove('active'));
+          const active = document.querySelector(`.toc-list a[href="#${entry.target.id}"]`);
+          if (active) active.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-10% 0px -80% 0px' });
+
+    headings.forEach(h => observer.observe(h));
+  </script>
+</body>
+</html>

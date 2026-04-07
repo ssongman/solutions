@@ -1,0 +1,138 @@
+<!DOCTYPE html><html lang="ko" data-astro-cid-fz5pa65a> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ID 관리 (Identity &amp; Access Management) | Azure 랜딩존 가이드</title><link rel="stylesheet" href="/_astro/_slug_.DuhP4zPR.css"><script type="module">const r=document.querySelectorAll("main h2, main h3"),s=document.querySelectorAll(".toc-list a"),i=new IntersectionObserver(e=>{e.forEach(t=>{if(t.isIntersecting){s.forEach(o=>o.classList.remove("active"));const c=document.querySelector(`.toc-list a[href="#${t.target.id}"]`);c&&c.classList.add("active")}})},{rootMargin:"-10% 0px -80% 0px"});r.forEach(e=>i.observe(e));
+</script></head> <body data-astro-cid-fz5pa65a> <header data-astro-cid-fz5pa65a> <a href="/index.html" data-astro-cid-fz5pa65a>Azure 랜딩존 가이드</a> <span data-astro-cid-fz5pa65a>엔터프라이즈 클라우드 기반 아키텍처</span> </header> <div class="page" data-astro-cid-fz5pa65a> <nav class="sidebar" data-astro-cid-fz5pa65a> <a href="/index.html" style="padding-left:1.25rem; font-weight:600;" data-astro-cid-fz5pa65a>홈</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>1. 개요</div> <a href="/01.개요/01.랜딩존이란.html" data-astro-cid-fz5pa65a>랜딩존이란?</a><a href="/01.개요/02.설계원칙.html" data-astro-cid-fz5pa65a>설계 원칙</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>2. 관리 그룹</div> <a href="/02.관리그룹/01.관리그룹구조.html" data-astro-cid-fz5pa65a>관리 그룹 구조</a><a href="/02.관리그룹/02.정책할당.html" data-astro-cid-fz5pa65a>정책 할당</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>3. 네트워킹</div> <a href="/03.네트워킹/01.허브스포크.html" data-astro-cid-fz5pa65a>허브-스포크</a><a href="/03.네트워킹/02.DNS설정.html" data-astro-cid-fz5pa65a>DNS 설정</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>4. 보안</div> <a href="/04.보안/01.ID관리.html" data-astro-cid-fz5pa65a>ID 관리</a><a href="/04.보안/02.보안기준선.html" data-astro-cid-fz5pa65a>보안 기준선</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>5. 운영</div> <a href="/05.운영/01.모니터링.html" data-astro-cid-fz5pa65a>모니터링</a> </nav> <main data-astro-cid-fz5pa65a>  <h1>ID 관리 (Identity &amp; Access Management)</h1>
+<p>Azure 랜딩존에서 ID 관리는 <strong>최소 권한 원칙</strong>을 기반으로<br>Azure AD(Entra ID)와 RBAC을 통해 모든 접근을 제어합니다.</p>
+<hr>
+<h2>핵심 구성 요소</h2>
+<pre><code>Azure AD (Entra ID) 테넌트
+├── 사용자 / 그룹 / 서비스 주체
+├── 조건부 액세스 정책
+├── PIM (Privileged Identity Management)
+└── MFA 정책
+</code></pre>
+<hr>
+<h2>RBAC 설계 원칙</h2>
+<h3>1. 그룹 기반 RBAC (직접 사용자 할당 금지)</h3>
+<pre><code>❌ 나쁜 예: user@company.com → Contributor 역할 직접 할당
+✅ 좋은 예: AAD Group &quot;lz-corp-contributors&quot; → Contributor 역할 할당
+                 └── user@company.com 이 그룹 멤버
+</code></pre>
+<h3>2. 관리 그룹 레벨 역할 할당</h3>
+<table>
+<thead>
+<tr>
+<th>역할</th>
+<th>할당 범위</th>
+<th>대상 그룹</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Owner</td>
+<td>구독</td>
+<td>플랫폼 팀 리드</td>
+</tr>
+<tr>
+<td>Contributor</td>
+<td>리소스 그룹</td>
+<td>애플리케이션 팀</td>
+</tr>
+<tr>
+<td>Reader</td>
+<td>관리 그룹</td>
+<td>감사 팀</td>
+</tr>
+<tr>
+<td>Network Contributor</td>
+<td>Connectivity 구독</td>
+<td>네트워크 팀</td>
+</tr>
+</tbody></table>
+<h3>3. 커스텀 역할 활용</h3>
+<pre><code class="language-json">{
+  &quot;Name&quot;: &quot;LZ-NetOps&quot;,
+  &quot;Actions&quot;: [
+    &quot;Microsoft.Network/virtualNetworks/read&quot;,
+    &quot;Microsoft.Network/virtualNetworks/subnets/*&quot;,
+    &quot;Microsoft.Network/routeTables/*&quot;
+  ],
+  &quot;NotActions&quot;: [
+    &quot;Microsoft.Network/virtualNetworks/delete&quot;
+  ],
+  &quot;AssignableScopes&quot;: [
+    &quot;/providers/Microsoft.Management/managementGroups/connectivity&quot;
+  ]
+}
+</code></pre>
+<hr>
+<h2>PIM (Privileged Identity Management)</h2>
+<p>Owner, Contributor 등 <strong>특권 역할은 PIM을 통해 Just-in-Time 방식</strong>으로 활성화합니다.</p>
+<pre><code>평소: 권한 없음
+    │
+    │ 작업 필요 시 PIM 활성화 요청
+    │
+승인자 승인 (또는 자동 승인)
+    │
+최대 8시간 동안 권한 활성화
+    │
+작업 완료 → 자동 만료
+</code></pre>
+<pre><code class="language-bash"># PIM 역할 활성화 (사용자가 직접 실행)
+az rest --method POST \
+  --url &quot;https://management.azure.com/providers/Microsoft.Authorization/roleAssignmentScheduleRequests&quot; \
+  --body &#39;{&quot;properties&quot;: {&quot;roleDefinitionId&quot;: &quot;...&quot;, &quot;justification&quot;: &quot;긴급 배포 작업&quot;}}&#39;
+</code></pre>
+<hr>
+<h2>조건부 액세스 정책</h2>
+<table>
+<thead>
+<tr>
+<th>정책</th>
+<th>조건</th>
+<th>제어</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>MFA 강제</td>
+<td>Azure Portal 접속</td>
+<td>MFA 필수</td>
+</tr>
+<tr>
+<td>관리자 MFA</td>
+<td>권한 있는 역할</td>
+<td>MFA + 준수 디바이스</td>
+</tr>
+<tr>
+<td>해외 IP 차단</td>
+<td>비허용 국가 IP</td>
+<td>차단</td>
+</tr>
+<tr>
+<td>레거시 인증 차단</td>
+<td>레거시 프로토콜</td>
+<td>차단</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>서비스 주체 &amp; Managed Identity</h2>
+<p>애플리케이션이 Azure 리소스에 접근할 때는 <strong>Managed Identity</strong>를 우선 사용합니다.</p>
+<pre><code>❌ 나쁜 예: 서비스 주체 + 클라이언트 시크릿 (키 관리 필요)
+✅ 좋은 예: System-assigned Managed Identity (Azure가 자동 관리)
+</code></pre>
+<pre><code class="language-bash"># VM에 Managed Identity 활성화
+az vm identity assign \
+  --resource-group rg-corp \
+  --name vm-app
+
+# Key Vault 접근 권한 부여
+az keyvault set-policy \
+  --name kv-corp \
+  --object-id &lt;managed-identity-object-id&gt; \
+  --secret-permissions get list
+</code></pre>
+<hr>
+<h2>다음 단계</h2>
+<ul>
+<li><a href="02.%EB%B3%B4%EC%95%88%EA%B8%B0%EC%A4%80%EC%84%A0.html">보안 기준선</a> — Defender for Cloud 및 보안 정책</li>
+<li><a href="../03.%EB%84%A4%ED%8A%B8%EC%9B%8C%ED%82%B9/02.DNS%EC%84%A4%EC%A0%95.html">DNS 설정</a> — 이전 페이지</li>
+<li><a href="../index.html">홈으로</a></li>
+</ul>
+  </main> <aside class="toc" data-astro-cid-fz5pa65a>  <div class="toc-title" data-astro-cid-fz5pa65a>이 페이지</div> <ul class="toc-list" data-astro-cid-fz5pa65a> <li data-astro-cid-fz5pa65a> <a href="#핵심-구성-요소" class="" data-astro-cid-fz5pa65a> 핵심 구성 요소 </a> </li><li data-astro-cid-fz5pa65a> <a href="#rbac-설계-원칙" class="" data-astro-cid-fz5pa65a> RBAC 설계 원칙 </a> </li><li data-astro-cid-fz5pa65a> <a href="#1-그룹-기반-rbac-직접-사용자-할당-금지" class="toc-h3" data-astro-cid-fz5pa65a> 1. 그룹 기반 RBAC (직접 사용자 할당 금지) </a> </li><li data-astro-cid-fz5pa65a> <a href="#2-관리-그룹-레벨-역할-할당" class="toc-h3" data-astro-cid-fz5pa65a> 2. 관리 그룹 레벨 역할 할당 </a> </li><li data-astro-cid-fz5pa65a> <a href="#3-커스텀-역할-활용" class="toc-h3" data-astro-cid-fz5pa65a> 3. 커스텀 역할 활용 </a> </li><li data-astro-cid-fz5pa65a> <a href="#pim-privileged-identity-management" class="" data-astro-cid-fz5pa65a> PIM (Privileged Identity Management) </a> </li><li data-astro-cid-fz5pa65a> <a href="#조건부-액세스-정책" class="" data-astro-cid-fz5pa65a> 조건부 액세스 정책 </a> </li><li data-astro-cid-fz5pa65a> <a href="#서비스-주체-managed-identity" class="" data-astro-cid-fz5pa65a> 서비스 주체 &amp; Managed Identity </a> </li><li data-astro-cid-fz5pa65a> <a href="#다음-단계" class="" data-astro-cid-fz5pa65a> 다음 단계 </a> </li> </ul>  </aside> </div>  </body> </html>

@@ -1,0 +1,66 @@
+site_name: Azure 랜딩존 가이드
+site_description: 엔터프라이즈 Azure 랜딩존 설계 및 구현 가이드
+site_author: Platform Team
+docs_dir: docs
+site_dir: site
+use_directory_urls: false
+
+theme:
+  name: material
+  language: ko
+  palette:
+    - scheme: default
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/weather-night
+        name: 다크 모드
+    - scheme: slate
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/weather-sunny
+        name: 라이트 모드
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search:
+      lang: ko
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - 홈: index.md
+  - 1. 개요:
+    - 랜딩존이란?: 01.개요/01.랜딩존이란.md
+    - 설계 원칙: 01.개요/02.설계원칙.md
+  - 2. 관리 그룹:
+    - 관리 그룹 구조: 02.관리그룹/01.관리그룹구조.md
+    - 정책 할당: 02.관리그룹/02.정책할당.md
+  - 3. 네트워킹:
+    - 허브-스포크 토폴로지: 03.네트워킹/01.허브스포크.md
+    - DNS 설정: 03.네트워킹/02.DNS설정.md
+  - 4. 보안:
+    - ID 관리: 04.보안/01.ID관리.md
+    - 보안 기준선: 04.보안/02.보안기준선.md
+  - 5. 운영:
+    - 모니터링: 05.운영/01.모니터링.md

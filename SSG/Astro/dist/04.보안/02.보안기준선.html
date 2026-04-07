@@ -1,0 +1,166 @@
+<!DOCTYPE html><html lang="ko" data-astro-cid-fz5pa65a> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>보안 기준선 (Security Baseline) | Azure 랜딩존 가이드</title><link rel="stylesheet" href="/_astro/_slug_.DuhP4zPR.css"><script type="module">const r=document.querySelectorAll("main h2, main h3"),s=document.querySelectorAll(".toc-list a"),i=new IntersectionObserver(e=>{e.forEach(t=>{if(t.isIntersecting){s.forEach(o=>o.classList.remove("active"));const c=document.querySelector(`.toc-list a[href="#${t.target.id}"]`);c&&c.classList.add("active")}})},{rootMargin:"-10% 0px -80% 0px"});r.forEach(e=>i.observe(e));
+</script></head> <body data-astro-cid-fz5pa65a> <header data-astro-cid-fz5pa65a> <a href="/index.html" data-astro-cid-fz5pa65a>Azure 랜딩존 가이드</a> <span data-astro-cid-fz5pa65a>엔터프라이즈 클라우드 기반 아키텍처</span> </header> <div class="page" data-astro-cid-fz5pa65a> <nav class="sidebar" data-astro-cid-fz5pa65a> <a href="/index.html" style="padding-left:1.25rem; font-weight:600;" data-astro-cid-fz5pa65a>홈</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>1. 개요</div> <a href="/01.개요/01.랜딩존이란.html" data-astro-cid-fz5pa65a>랜딩존이란?</a><a href="/01.개요/02.설계원칙.html" data-astro-cid-fz5pa65a>설계 원칙</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>2. 관리 그룹</div> <a href="/02.관리그룹/01.관리그룹구조.html" data-astro-cid-fz5pa65a>관리 그룹 구조</a><a href="/02.관리그룹/02.정책할당.html" data-astro-cid-fz5pa65a>정책 할당</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>3. 네트워킹</div> <a href="/03.네트워킹/01.허브스포크.html" data-astro-cid-fz5pa65a>허브-스포크</a><a href="/03.네트워킹/02.DNS설정.html" data-astro-cid-fz5pa65a>DNS 설정</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>4. 보안</div> <a href="/04.보안/01.ID관리.html" data-astro-cid-fz5pa65a>ID 관리</a><a href="/04.보안/02.보안기준선.html" data-astro-cid-fz5pa65a>보안 기준선</a> <div class="nav-group-label" data-astro-cid-fz5pa65a>5. 운영</div> <a href="/05.운영/01.모니터링.html" data-astro-cid-fz5pa65a>모니터링</a> </nav> <main data-astro-cid-fz5pa65a>  <h1>보안 기준선 (Security Baseline)</h1>
+<p>Azure 랜딩존의 보안 기준선은 <strong>Microsoft Defender for Cloud</strong>를 중심으로<br>모든 구독에 일관된 보안 상태를 유지합니다.</p>
+<hr>
+<h2>Defender for Cloud 구성</h2>
+<h3>구독별 활성화 플랜</h3>
+<table>
+<thead>
+<tr>
+<th>플랜</th>
+<th>대상</th>
+<th>비용</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Defender for Servers P2</td>
+<td>모든 VM</td>
+<td>$0.02/VM-hour</td>
+</tr>
+<tr>
+<td>Defender for SQL</td>
+<td>Azure SQL, SQL on VM</td>
+<td>$0.015/VM-hour</td>
+</tr>
+<tr>
+<td>Defender for Storage</td>
+<td>Storage Account</td>
+<td>$10/month per account</td>
+</tr>
+<tr>
+<td>Defender for Containers</td>
+<td>AKS</td>
+<td>$7/VM-core-hour</td>
+</tr>
+<tr>
+<td>Defender for Key Vault</td>
+<td>Key Vault</td>
+<td>$0.02/1만 트랜잭션</td>
+</tr>
+</tbody></table>
+<pre><code class="language-bash"># 구독의 모든 Defender 플랜 활성화
+az security pricing create \
+  --name VirtualMachines \
+  --tier Standard
+</code></pre>
+<hr>
+<h2>Microsoft Cloud Security Benchmark (MCSB)</h2>
+<p>랜딩존 전체에 <strong>MCSB (구 Azure Security Benchmark)</strong> 를 기본 보안 정책으로 적용합니다.</p>
+<pre><code class="language-bash"># 관리 그룹에 MCSB Initiative 할당
+az security assessment-metadata create \
+  --name &quot;mcsb-assignment&quot; \
+  --scope &quot;/providers/Microsoft.Management/managementGroups/root-mg&quot;
+</code></pre>
+<h3>주요 통제 항목</h3>
+<table>
+<thead>
+<tr>
+<th>영역</th>
+<th>통제 내용</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>네트워크 보안</td>
+<td>NSG 필수, 불필요 공인 IP 제거</td>
+</tr>
+<tr>
+<td>ID 관리</td>
+<td>MFA 강제, 레거시 인증 차단</td>
+</tr>
+<tr>
+<td>권한 있는 접근</td>
+<td>PIM 활성화, Just-in-Time VM 접근</td>
+</tr>
+<tr>
+<td>데이터 보호</td>
+<td>저장 데이터 암호화, TLS 1.2 이상</td>
+</tr>
+<tr>
+<td>로그 &amp; 모니터링</td>
+<td>진단 로그 → Log Analytics 전송</td>
+</tr>
+<tr>
+<td>취약점 관리</td>
+<td>Qualys/TVM 통합 취약점 스캔</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Just-in-Time (JIT) VM 접근</h2>
+<p>SSH/RDP 포트를 평소에는 차단하고 <strong>요청 시에만 일시적으로 개방</strong>합니다.</p>
+<pre><code>평소: NSG에서 22/3389 차단
+    │
+    │ JIT 요청 (포털/CLI/API)
+    │
+승인 후 최대 3시간 특정 IP만 허용
+    │
+시간 만료 → 자동 차단
+</code></pre>
+<pre><code class="language-bash"># JIT 정책 설정
+az security jit-policy create \
+  --resource-group rg-corp \
+  --name default \
+  --vm-name vm-app \
+  --ports &#39;[{&quot;number&quot;: 22, &quot;protocol&quot;: &quot;TCP&quot;, &quot;allowedSourceAddressPrefix&quot;: &quot;*&quot;, &quot;maxRequestAccessDuration&quot;: &quot;PT3H&quot;}]&#39;
+</code></pre>
+<hr>
+<h2>보안 경보 및 인시던트 대응</h2>
+<h3>Microsoft Sentinel 연동</h3>
+<pre><code>Defender for Cloud 경보
+    │
+    ▼
+Microsoft Sentinel (SIEM)
+    ├── 분석 규칙으로 인시던트 생성
+    ├── 자동화 플레이북 실행
+    └── Teams / PagerDuty 알림
+</code></pre>
+<h3>주요 탐지 규칙</h3>
+<table>
+<thead>
+<tr>
+<th>규칙</th>
+<th>심각도</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>불가능한 이동 감지 (다른 국가 동시 로그인)</td>
+<td>High</td>
+</tr>
+<tr>
+<td>관리자 계정 무차별 대입 공격</td>
+<td>High</td>
+</tr>
+<tr>
+<td>대량 리소스 삭제</td>
+<td>Critical</td>
+</tr>
+<tr>
+<td>비정상 아웃바운드 트래픽</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Key Vault 대량 조회</td>
+<td>Medium</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>규정 준수 (Compliance)</h2>
+<pre><code class="language-bash"># 규정 준수 상태 확인
+az security compliance list \
+  --subscription &lt;subscription-id&gt;
+</code></pre>
+<p>지원 규정 프레임워크:</p>
+<ul>
+<li><strong>ISO 27001</strong></li>
+<li><strong>NIST SP 800-53</strong></li>
+<li><strong>PCI DSS</strong></li>
+<li><strong>K-ISMS</strong> (국내)</li>
+</ul>
+<hr>
+<h2>다음 단계</h2>
+<ul>
+<li><a href="../05.%EC%9A%B4%EC%98%81/01.%EB%AA%A8%EB%8B%88%ED%84%B0%EB%A7%81.html">모니터링</a> — Log Analytics 및 운영 모니터링</li>
+<li><a href="01.ID%EA%B4%80%EB%A6%AC.html">ID 관리</a> — 이전 페이지</li>
+<li><a href="../02.%EA%B4%80%EB%A6%AC%EA%B7%B8%EB%A3%B9/02.%EC%A0%95%EC%B1%85%ED%95%A0%EB%8B%B9.html">정책 할당</a> — 보안 정책 자동화</li>
+<li><a href="../index.html">홈으로</a></li>
+</ul>
+  </main> <aside class="toc" data-astro-cid-fz5pa65a>  <div class="toc-title" data-astro-cid-fz5pa65a>이 페이지</div> <ul class="toc-list" data-astro-cid-fz5pa65a> <li data-astro-cid-fz5pa65a> <a href="#defender-for-cloud-구성" class="" data-astro-cid-fz5pa65a> Defender for Cloud 구성 </a> </li><li data-astro-cid-fz5pa65a> <a href="#구독별-활성화-플랜" class="toc-h3" data-astro-cid-fz5pa65a> 구독별 활성화 플랜 </a> </li><li data-astro-cid-fz5pa65a> <a href="#microsoft-cloud-security-benchmark-mcsb" class="" data-astro-cid-fz5pa65a> Microsoft Cloud Security Benchmark (MCSB) </a> </li><li data-astro-cid-fz5pa65a> <a href="#주요-통제-항목" class="toc-h3" data-astro-cid-fz5pa65a> 주요 통제 항목 </a> </li><li data-astro-cid-fz5pa65a> <a href="#just-in-time-jit-vm-접근" class="" data-astro-cid-fz5pa65a> Just-in-Time (JIT) VM 접근 </a> </li><li data-astro-cid-fz5pa65a> <a href="#보안-경보-및-인시던트-대응" class="" data-astro-cid-fz5pa65a> 보안 경보 및 인시던트 대응 </a> </li><li data-astro-cid-fz5pa65a> <a href="#microsoft-sentinel-연동" class="toc-h3" data-astro-cid-fz5pa65a> Microsoft Sentinel 연동 </a> </li><li data-astro-cid-fz5pa65a> <a href="#주요-탐지-규칙" class="toc-h3" data-astro-cid-fz5pa65a> 주요 탐지 규칙 </a> </li><li data-astro-cid-fz5pa65a> <a href="#규정-준수-compliance" class="" data-astro-cid-fz5pa65a> 규정 준수 (Compliance) </a> </li><li data-astro-cid-fz5pa65a> <a href="#다음-단계" class="" data-astro-cid-fz5pa65a> 다음 단계 </a> </li> </ul>  </aside> </div>  </body> </html>
